@@ -1,8 +1,13 @@
 {{- if .Values.ingress.enabled }}
+# ─────────────────────────────────────────────────────────────────
+# PUBLIC ingress — herkese açık:
+#   vivabit.digital          → frontend (uygulama)
+#   grafana.vivabit.digital  → grafana (kendi login'i var)
+# ─────────────────────────────────────────────────────────────────
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: habit-tracker-ingress
+  name: habit-tracker-public
   labels: {{- include "habit-tracker.labels" . | nindent 4 }}
   annotations:
     cert-manager.io/cluster-issuer: {{ .Values.ingress.certIssuer }}
@@ -14,11 +19,8 @@ spec:
   tls:
     - hosts:
         - {{ .Values.domain }}
-        - api.{{ .Values.domain }}
         - grafana.{{ .Values.domain }}
-        - jaeger.{{ .Values.domain }}
-        - prometheus.{{ .Values.domain }}
-      secretName: habit-tracker-tls
+      secretName: habit-tracker-public-tls
   {{- end }}
   rules:
     - host: {{ .Values.domain }}
@@ -28,13 +30,6 @@ spec:
             pathType: Prefix
             backend:
               service: { name: frontend, port: { number: 80 } }
-    - host: api.{{ .Values.domain }}
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service: { name: backend, port: { number: 8000 } }
     - host: grafana.{{ .Values.domain }}
       http:
         paths:
@@ -42,6 +37,43 @@ spec:
             pathType: Prefix
             backend:
               service: { name: grafana, port: { number: 3000 } }
+---
+# ─────────────────────────────────────────────────────────────────
+# PROTECTED ingress — BasicAuth ile korunur (admin / habit2026):
+#   api.vivabit.digital         → backend (Swagger /docs + /metrics)
+#   jaeger.vivabit.digital      → tracing UI
+#   prometheus.vivabit.digital  → metrik UI
+# ─────────────────────────────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: habit-tracker-protected
+  labels: {{- include "habit-tracker.labels" . | nindent 4 }}
+  annotations:
+    cert-manager.io/cluster-issuer: {{ .Values.ingress.certIssuer }}
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    {{- if .Values.basicAuth.enabled }}
+    traefik.ingress.kubernetes.io/router.middlewares: {{ .Release.Namespace }}-dashboard-auth@kubernetescrd
+    {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- if .Values.ingress.tls }}
+  tls:
+    - hosts:
+        - api.{{ .Values.domain }}
+        - jaeger.{{ .Values.domain }}
+        - prometheus.{{ .Values.domain }}
+      secretName: habit-tracker-protected-tls
+  {{- end }}
+  rules:
+    - host: api.{{ .Values.domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: backend, port: { number: 8000 } }
     - host: jaeger.{{ .Values.domain }}
       http:
         paths:

@@ -86,5 +86,13 @@ ingress:
   tls: true
   certIssuer: letsencrypt-prod
 
+# ── Basic Auth (jaeger / prometheus / api koruması) ───────────────
+# Traefik BasicAuth middleware ile korunur. htpasswd bcrypt formatı.
+# Yeni şifre:  htpasswd -nbB admin <şifre>
+# Varsayılan:  admin / habit2026
+basicAuth:
+  enabled: true
+  users: "admin:$2y$12$pZvDuLnGDxQ/hsYWgFsh8upA6gIcxG6qDKT8or5YGIC1VyQRz00bW"
+
 # ── Image pull secret (GHCR) ──────────────────────────────────────
 imagePullSecret: ghcr-pull
