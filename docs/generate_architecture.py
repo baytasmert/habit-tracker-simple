@@ -65,6 +65,9 @@ box(ax, 9.5, 6.5, 2.2, 1.0, 'Prometheus', ':9090', '#D35400')
 # Grafana
 box(ax, 12.0, 6.5, 1.5, 1.0, 'Grafana', ':3000', '#2980B9')
 
+# Jaeger
+box(ax, 9.5, 2.5, 2.2, 1.0, 'Jaeger', ':16686 / OTLP :4317', '#16A085')
+
 # K8s box
 box(ax, 0.5, 1.5, 8.5, 1.8, 'Kubernetes (Kind)', '', '#2C3E50')
 ax.text(4.7, 2.7, 'Deployment + Service + ConfigMap',
@@ -85,6 +88,7 @@ arrow(ax, 7.6, 6.5, 7.6, 5.2, 'SQLAlchemy')
 arrow(ax, 8.7, 6.7, 9.5, 5.0, 'boto3')
 arrow(ax, 8.7, 7.2, 9.5, 7.2, '/metrics')
 arrow(ax, 11.7, 7.0, 12.0, 7.0, 'query')
+arrow(ax, 8.7, 6.5, 9.5, 3.5, 'OTLP traces')
 
 # CI → K8s
 arrow(ax, 10.0, 2.4, 9.0, 2.4, 'kubectl apply')
