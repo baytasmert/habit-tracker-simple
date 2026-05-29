@@ -8,6 +8,23 @@ Günlük alışkanlık takibi yapan minimal bir REST API. Şartnamenin **tüm** 
 
 ---
 
+## 🌐 Canlı Demo
+
+Uygulama gerçek bir VPS'te **k3s Kubernetes** cluster'ında çalışıyor (Helm + ArgoCD GitOps + Traefik + Let's Encrypt HTTPS):
+
+| Servis | URL | Erişim |
+|--------|-----|--------|
+| **Uygulama** | https://vivabit.digital | Herkese açık |
+| Grafana | https://grafana.vivabit.digital | admin / admin |
+| ArgoCD | https://argocd.vivabit.digital | admin / (cluster secret) |
+| API Docs (Swagger) | https://api.vivabit.digital/docs | BasicAuth: admin / habit2026 |
+| Jaeger (tracing) | https://jaeger.vivabit.digital | BasicAuth: admin / habit2026 |
+| Prometheus | https://prometheus.vivabit.digital | BasicAuth: admin / habit2026 |
+
+🎥 **Demo videosu:** _(buraya Drive/YouTube linki — sunumda canlı demo çökerse yedek)_
+
+---
+
 ## 🏗️ Mimari
 
 ```
