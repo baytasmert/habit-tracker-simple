@@ -73,6 +73,8 @@ def test_create_habit_and_see_in_list(page: Page):
     page.click("#register-btn")
     page.wait_for_url(f"{FRONTEND_URL}/dashboard.html")
 
+    # Form toggle arkasında — önce aç
+    page.click("#toggle-add")
     page.fill("#habit-name", "E2E test habit")
     page.fill("#habit-description", "Created via Playwright")
     page.click("#create-habit-btn")
@@ -81,7 +83,7 @@ def test_create_habit_and_see_in_list(page: Page):
 
 
 def test_track_habit_increments_streak(page: Page):
-    """Senaryo 4: Habit oluştur, 'Bugün Yaptım' tıkla, streak 1'e yükselsin."""
+    """Senaryo 4: Habit oluştur, modal'dan tamamla, streak 1'e yükselsin."""
     user = _unique_user()
 
     page.goto(f"{FRONTEND_URL}/register.html")
@@ -91,13 +93,22 @@ def test_track_habit_increments_streak(page: Page):
     page.click("#register-btn")
     page.wait_for_url(f"{FRONTEND_URL}/dashboard.html")
 
+    page.click("#toggle-add")
     page.fill("#habit-name", "Daily meditation")
     page.click("#create-habit-btn")
+
+    # "Bugünü Tamamla" → modal açılır
     track_btn = page.locator("[data-track]").first
     expect(track_btn).to_be_visible(timeout=5000)
     track_btn.click()
 
-    streak = page.locator(".streak-badge").first
+    # Modal'da not gir, tamamla
+    expect(page.locator("#checkin-modal")).to_be_visible(timeout=5000)
+    page.fill("#checkin-note", "Playwright E2E notu")
+    page.click("#checkin-submit")
+
+    # Streak sayısı 1 olmalı
+    streak = page.locator(".streak-num").first
     expect(streak).to_contain_text("1", timeout=5000)
 
 

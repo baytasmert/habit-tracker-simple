@@ -61,6 +61,7 @@ class HabitLogOut(BaseModel):
     log_date: date
     done: bool
     notes: Optional[str]
+    photo_key: Optional[str] = None
 
 
 class StreakOut(BaseModel):

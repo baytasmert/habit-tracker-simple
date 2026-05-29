@@ -2,6 +2,7 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Habit Tracker — Panel</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
@@ -11,15 +12,34 @@
       <span class="brand-icon">🎯</span>
       <h1>Habit Tracker</h1>
     </div>
-    <button id="logout-btn" class="logout-btn">Çıkış Yap</button>
+    <div class="top-bar-right">
+      <span id="greeting" class="greeting"></span>
+      <button id="logout-btn" class="logout-btn">Çıkış</button>
+    </div>
   </header>
 
   <main class="dashboard-main">
 
-    <!-- Yeni Alışkanlık -->
+    <!-- İstatistik kartları -->
+    <section class="stats-row">
+      <div class="stat-card">
+        <div class="stat-value" id="stat-total">0</div>
+        <div class="stat-label">Alışkanlık</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-today">0</div>
+        <div class="stat-label">Bugün Tamamlanan</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-streak">0</div>
+        <div class="stat-label">En Uzun Seri 🔥</div>
+      </div>
+    </section>
+
+    <!-- Yeni alışkanlık (toggle) -->
     <section class="card add-card">
-      <h2>✚ Yeni Alışkanlık</h2>
-      <form id="new-habit-form" class="add-form">
+      <button id="toggle-add" class="toggle-add">＋ Yeni Alışkanlık Ekle</button>
+      <form id="new-habit-form" class="add-form" hidden>
         <div class="form-row">
           <label>
             İsim
@@ -44,24 +64,50 @@
         </div>
         <label>
           Açıklama <span class="optional">(opsiyonel)</span>
-          <input type="text" id="habit-description" placeholder="Kısa bir açıklama ekle...">
+          <input type="text" id="habit-description" placeholder="Kısa bir açıklama...">
         </label>
         <div class="form-actions">
           <p class="error" id="new-habit-error" hidden></p>
-          <button type="submit" id="create-habit-btn" class="btn-create">Alışkanlık Ekle</button>
+          <button type="submit" id="create-habit-btn" class="btn-create">Ekle</button>
         </div>
       </form>
     </section>
 
-    <!-- Alışkanlık Listesi -->
-    <section class="card">
-      <h2>📋 Alışkanlıklarım</h2>
+    <!-- Liste -->
+    <section>
+      <h2 class="section-title">Alışkanlıklarım</h2>
       <div id="habits-list" class="habits-list">
         <p class="loading">Yükleniyor...</p>
       </div>
     </section>
 
   </main>
+
+  <!-- Check-in Modal -->
+  <div id="checkin-modal" class="modal-overlay" hidden>
+    <div class="modal">
+      <div class="modal-header">
+        <h3>✓ Bugünü Tamamla</h3>
+        <button class="modal-close" id="modal-close">×</button>
+      </div>
+      <p class="modal-sub" id="modal-sub"></p>
+      <form id="checkin-form">
+        <label>
+          Nasıl geçti? <span class="optional">(not)</span>
+          <textarea id="checkin-note" rows="3" placeholder="Bugünle ilgili bir not bırak..."></textarea>
+        </label>
+        <label class="file-label">
+          📷 Fotoğraf ekle <span class="optional">(opsiyonel)</span>
+          <input type="file" id="checkin-photo" accept="image/*">
+        </label>
+        <div class="modal-status" id="modal-status"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn-ghost-sm" id="modal-cancel">İptal</button>
+          <button type="submit" class="btn-create" id="checkin-submit">Tamamla ✓</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <script src="/js/config.js"></script>
   <script src="/js/api.js"></script>

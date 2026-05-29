@@ -7,7 +7,7 @@ Frontend ayrı bir servistir (NGINX → frontend/); bu API HTML döndürmez.
 from datetime import date, timedelta
 import time
 
-from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Request, status
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
@@ -170,6 +170,32 @@ def track_habit(
     return log
 
 
+# ── GET /habits/{id}/logs — günlük kayıt geçmişi ────────────────
+@app.get("/habits/{habit_id}/logs", response_model=list[schemas.HabitLogOut])
+def list_habit_logs(
+    habit_id: int,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _get_habit_for_user(db, habit_id, user.id)
+    return db.query(models.HabitLog).filter(
+        models.HabitLog.habit_id == habit_id
+    ).order_by(models.HabitLog.log_date.desc()).all()
+
+
+# ── DELETE /habits/{id} — alışkanlık sil ────────────────────────
+@app.delete("/habits/{habit_id}", status_code=204)
+def delete_habit(
+    habit_id: int,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    habit = _get_habit_for_user(db, habit_id, user.id)
+    db.delete(habit)
+    db.commit()
+    return Response(status_code=204)
+
+
 # ── Endpoint 6: GET /habits/{id}/streak ─────────────────────────
 @app.get("/habits/{habit_id}/streak", response_model=schemas.StreakOut)
 def get_streak(
@@ -217,13 +243,27 @@ def _get_habit_for_user(db: Session, habit_id: int, user_id: int) -> models.Habi
 def upload_habit_photo(
     habit_id: int,
     file: UploadFile = File(...),
+    log_date: str = Form(None),
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     _get_habit_for_user(db, habit_id, user.id)
     body = file.file.read()
-    key = f"habits/{habit_id}/{file.filename}"
+
+    # log_date verildiyse o günün kaydına bağla, yoksa genel klasöre koy
+    day = log_date or date.today().isoformat()
+    key = f"habits/{habit_id}/{day}/{file.filename}"
     url = s3_client.upload_photo(key, body, file.content_type or "image/jpeg")
+
+    # İlgili günün log'una photo_key yaz (varsa)
+    log = db.query(models.HabitLog).filter(
+        models.HabitLog.habit_id == habit_id,
+        models.HabitLog.log_date == day,
+    ).first()
+    if log:
+        log.photo_key = key
+        db.commit()
+
     return {"key": key, "url": url, "size_bytes": len(body)}
 
 

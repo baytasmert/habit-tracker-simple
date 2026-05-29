@@ -47,13 +47,14 @@ async function apiCall(path, { method = "GET", body, auth = true } = {}) {
   return data;
 }
 
-async function uploadFile(path, file) {
+async function uploadFile(path, file, extraFields = {}) {
   const headers = {};
   const token = getToken();
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
   const fd = new FormData();
   fd.append("file", file);
+  for (const [k, v] of Object.entries(extraFields)) fd.append(k, v);
 
   const res = await fetch(`${window.API_URL}${path}`, {
     method: "POST",
@@ -81,10 +82,13 @@ window.api = {
     apiCall("/login", { method: "POST", body: { email, password }, auth: false }),
   listHabits: () => apiCall("/habits"),
   createHabit: (data) => apiCall("/habits", { method: "POST", body: data }),
-  trackHabit: (id, done = true, notes = null) =>
-    apiCall(`/habits/${id}/track`, { method: "POST", body: { done, notes } }),
+  deleteHabit: (id) => apiCall(`/habits/${id}`, { method: "DELETE" }),
+  trackHabit: (id, { done = true, notes = null, log_date = null } = {}) =>
+    apiCall(`/habits/${id}/track`, { method: "POST", body: { done, notes, log_date } }),
   getStreak: (id) => apiCall(`/habits/${id}/streak`),
-  uploadPhoto: (id, file) => uploadFile(`/habits/${id}/photo`, file),
+  getLogs: (id) => apiCall(`/habits/${id}/logs`),
+  uploadPhoto: (id, file, logDate = null) =>
+    uploadFile(`/habits/${id}/photo`, file, logDate ? { log_date: logDate } : {}),
   listPhotos: (id) => apiCall(`/habits/${id}/photos`),
 };
 

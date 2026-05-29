@@ -40,6 +40,7 @@ class HabitLog(Base):
     log_date = Column(Date, nullable=False)
     done = Column(Boolean, default=False)
     notes = Column(String)
+    photo_key = Column(String, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
 
     habit = relationship("Habit", back_populates="logs")
