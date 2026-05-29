@@ -1,4 +1,12 @@
 [flake8]
 max-line-length = 120
-exclude = .git,__pycache__,venv,.venv,.pytest_cache
-ignore = E501, W503, E203
+exclude = .git,__pycache__,venv,.venv,.pytest_cache,build,dist
+# Pragmatik ignore listesi — kodu kıran hatalar değil, stil tercihleri:
+#   E203  whitespace before ':'      (Black formatter ile çakışır)
+#   E302  expected 2 blank lines     (tek satırlı helper'larda gereksiz)
+#   E704  statement on same line     (kısa def için kabul)
+#   E712  comparison to True/False   (SQLAlchemy filter ifadelerinde gerekli)
+#   F401  imported but unused        (conftest/fixture import'lar için)
+#   W293  whitespace on blank line   (IDE'ler farklı davranıyor)
+#   W503  line break before binary op (PEP8 önerisi değişti)
+ignore = E203, E302, E501, E704, E712, F401, W293, W503
