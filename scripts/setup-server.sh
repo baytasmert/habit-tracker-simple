@@ -54,10 +54,13 @@ echo "▸ [4/4] ArgoCD kuruluyor…"
 helm repo add argo https://argoproj.github.io/argo-helm --force-update
 helm repo update
 
+# server.insecure: ingress (Traefik) TLS'i sonlandırıp HTTP forward ettiği
+# için ArgoCD plain HTTP serve etmeli — yoksa redirect loop olur.
+# Doğru helm path: configs.params."server.insecure"
 helm upgrade --install argocd argo/argo-cd \
   --namespace argocd \
   --create-namespace \
-  --set server.insecure=true \
+  --set 'configs.params.server\.insecure=true' \
   --wait --timeout 5m
 
 echo "  ArgoCD hazır ✓"
