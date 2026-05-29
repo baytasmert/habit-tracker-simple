@@ -15,7 +15,10 @@ spec:
     spec:
       containers:
         - name: backend
-          image: __BACKEND_IMAGE__
+          # kustomization.yaml'da images: alanı bu adı (`backend`) GHCR
+          # imajıyla + tag ile değiştirir. CI her main push'unda
+          # `kustomize edit set image backend=...:<sha>` çağırır.
+          image: backend
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000

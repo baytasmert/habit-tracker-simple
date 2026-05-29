@@ -1,0 +1,39 @@
+# ─────────────────────────────────────────────────────────────────
+# Kustomize root — ArgoCD bu dosyayı okur, kustomize build çıktısını
+# cluster'a uygular.
+#
+# CI her main push'ta:
+#   kustomize edit set image \
+#     backend=ghcr.io/baytasmert/habit-tracker-simple/backend:<sha> \
+#     frontend=ghcr.io/baytasmert/habit-tracker-simple/frontend:<sha>
+# komutunu çalıştırıp aşağıdaki `images:` bloğunu günceller, sonra
+# bu dosyayı git'e commit'ler. ArgoCD repo değişikliğini görüp sync
+# eder, deployment yeni image ile rollout başlatır.
+# ─────────────────────────────────────────────────────────────────
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: default
+
+resources:
+  - configmap.yaml
+  - postgres.yaml
+  - localstack.yaml
+  - jaeger.yaml
+  - prometheus.yaml
+  - grafana.yaml
+  - backend.yaml
+  - frontend.yaml
+  - ingress.yaml
+
+images:
+  - name: backend
+    newName: ghcr.io/baytasmert/habit-tracker-simple/backend
+    newTag: latest
+  - name: frontend
+    newName: ghcr.io/baytasmert/habit-tracker-simple/frontend
+    newTag: latest
+
+commonLabels:
+  app.kubernetes.io/part-of: habit-tracker-simple
+  app.kubernetes.io/managed-by: argocd

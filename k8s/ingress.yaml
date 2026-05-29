@@ -1,0 +1,65 @@
+# ─────────────────────────────────────────────────────────────────
+# Traefik Ingress — k3s'in default ingress controller'ı Traefik.
+# 5 alt domain her servisi public HTTPS URL'e açar.
+#
+# DNS:  5 A kaydı: app/api/grafana/jaeger/prometheus → sunucu IP
+# TLS:  cert-manager Let's Encrypt cluster issuer otomatik halleder
+#
+# ÖNEMLİ: Aşağıdaki HOSTNAME değerleri sunum öncesi senin domain'inle
+# değiştirilmeli. Hızlı yol: <SUNUCU-IP>.nip.io kullan (DNS gereksiz).
+# Örnek:  app.78-47-123-45.nip.io
+# ─────────────────────────────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: habit-tracker-ingress
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - app.example.com
+        - api.example.com
+        - grafana.example.com
+        - jaeger.example.com
+        - prometheus.example.com
+      secretName: habit-tracker-tls
+  rules:
+    - host: app.example.com           # Frontend (welcome → login → dashboard)
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: frontend, port: { number: 80 } }
+    - host: api.example.com           # Backend FastAPI doğrudan (Swagger /docs)
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: backend, port: { number: 8000 } }
+    - host: grafana.example.com       # Grafana — admin/admin
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: grafana, port: { number: 3000 } }
+    - host: jaeger.example.com        # Jaeger UI — trace'ler
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: jaeger, port: { number: 16686 } }
+    - host: prometheus.example.com    # Prometheus query UI
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: prometheus, port: { number: 9090 } }

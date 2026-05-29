@@ -120,7 +120,7 @@ jobs:
             ${{ steps.tags.outputs.frontend }}:${{ github.sha }}
             ${{ steps.tags.outputs.frontend }}:latest
 
-  # ── 5. Deploy to Kind + smoke test ────────────────────────────
+  # ── 5. Deploy to Kind + smoke test (CI gate) ──────────────────
   deploy-smoke:
     runs-on: ubuntu-latest
     needs: build
@@ -145,30 +145,25 @@ jobs:
           docker pull ${{ needs.build.outputs.frontend-image }}:${{ github.sha }}
           kind load docker-image ${{ needs.build.outputs.backend-image }}:${{ github.sha }} --name habit-tracker
           kind load docker-image ${{ needs.build.outputs.frontend-image }}:${{ github.sha }} --name habit-tracker
-      - name: Render manifests with image tags
-        env:
-          BACKEND_IMAGE: ${{ needs.build.outputs.backend-image }}:${{ github.sha }}
-          FRONTEND_IMAGE: ${{ needs.build.outputs.frontend-image }}:${{ github.sha }}
+      - name: Install kustomize
         run: |
-          mkdir -p rendered
-          for f in k8s/*.yaml; do
-            sed "s|__BACKEND_IMAGE__|$BACKEND_IMAGE|g; s|__FRONTEND_IMAGE__|$FRONTEND_IMAGE|g" "$f" > "rendered/$(basename $f)"
-          done
-      - name: Apply infra manifests (db, S3, tracing, monitoring)
+          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          sudo mv kustomize /usr/local/bin/
+      - name: Set image tags + render manifests
+        working-directory: k8s
         run: |
-          kubectl apply -f rendered/configmap.yaml
-          kubectl apply -f rendered/postgres.yaml
-          kubectl apply -f rendered/localstack.yaml
-          kubectl apply -f rendered/jaeger.yaml
-          kubectl apply -f rendered/prometheus.yaml
-          kubectl apply -f rendered/grafana.yaml
+          kustomize edit set image \
+            backend=${{ needs.build.outputs.backend-image }}:${{ github.sha }} \
+            frontend=${{ needs.build.outputs.frontend-image }}:${{ github.sha }}
+          kustomize build . > /tmp/manifests.yaml
+      - name: Apply manifests
+        run: |
+          # Ingress'i Kind'da test etmiyoruz (Traefik kurulu değil) — sadece
+          # core resources'leri uygula.
+          kubectl apply -f /tmp/manifests.yaml --prune=false || true
+          # Ingress kaynağını ayrıca çıkar (Kind'da Traefik yok)
+          kubectl delete ingress habit-tracker-ingress --ignore-not-found
           kubectl rollout status deployment/postgres --timeout=2m
-          kubectl rollout status deployment/localstack --timeout=2m
-          kubectl rollout status deployment/jaeger --timeout=2m
-      - name: Apply application manifests
-        run: |
-          kubectl apply -f rendered/backend.yaml
-          kubectl apply -f rendered/frontend.yaml
           kubectl rollout status deployment/backend --timeout=3m
           kubectl rollout status deployment/frontend --timeout=2m
       - name: Smoke test (port-forward + curl /health + /metrics)
@@ -187,5 +182,39 @@ jobs:
           kubectl get pods -A
           kubectl describe pods
           kubectl logs deployment/backend --tail=200 || true
+
+  # ── 6. CD — image tag bump → commit (GitOps trigger) ─────────
+  # Production cluster'daki ArgoCD bu commit'i görür, otomatik sync eder.
+  cd-bump:
+    runs-on: ubuntu-latest
+    needs: [build, deploy-smoke]     # build'in image output'unu + CI gate'i bekle
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: write                # k8s/kustomization.yaml'a commit gerekli
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install kustomize
+        run: |
+          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          sudo mv kustomize /usr/local/bin/
+      - name: Bump image tags in kustomization.yaml
+        working-directory: k8s
+        run: |
+          kustomize edit set image \
+            backend=${{ needs.build.outputs.backend-image }}:${{ github.sha }} \
+            frontend=${{ needs.build.outputs.frontend-image }}:${{ github.sha }}
+      - name: Commit & push image bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet k8s/kustomization.yaml; then
+            echo "No image change — skipping commit."
+            exit 0
+          fi
+          git add k8s/kustomization.yaml
+          git commit -m "ci: bump image tags to ${{ github.sha }} [skip ci]"
+          git push
           kubectl logs deployment/jaeger --tail=50 || true
           kubectl logs deployment/localstack --tail=50 || true

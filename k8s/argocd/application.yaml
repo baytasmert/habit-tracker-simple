@@ -1,33 +1,20 @@
 # ─────────────────────────────────────────────────────────────────
-# ArgoCD Application — GitOps deploy manifest      (+5 bonus puan)
-# ─────────────────────────────────────────────────────────────────
-# Önce ArgoCD'nin cluster'da kurulu olması gerekir:
+# ArgoCD Application — GitOps for habit-tracker-simple
 #
-#   kubectl create namespace argocd
-#   kubectl apply -n argocd \
-#     -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-#   kubectl wait --for=condition=available --timeout=300s \
-#     deployment/argocd-server -n argocd
+# Watch'ler:  k8s/ klasörü (kustomization.yaml)
+# Trigger:    Repo'ya her commit (CI tarafından image bump dahil)
+# Action:     kustomize build → kubectl apply (otomatik)
 #
-# ArgoCD UI'a port-forward:
-#
-#   kubectl port-forward svc/argocd-server -n argocd 8090:443
-#   # User: admin  Password:
-#   kubectl -n argocd get secret argocd-initial-admin-secret \
-#     -o jsonpath="{.data.password}" | base64 -d
-#
-# Bu Application'ı apply etmek için:
-#
+# Sunucuya tek seferlik apply:
 #   kubectl apply -f k8s/argocd/application.yaml
-#
-# ArgoCD bu repo'yu watch eder, k8s/ klasöründeki manifestleri
-# otomatik sync eder. Yeni commit → otomatik deploy.
 # ─────────────────────────────────────────────────────────────────
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: habit-tracker-simple
   namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
 
@@ -35,9 +22,9 @@ spec:
     repoURL: https://github.com/baytasmert/habit-tracker-simple.git
     targetRevision: main
     path: k8s
-    directory:
-      recurse: false
-      exclude: 'argocd/*'   # Bu klasör ArgoCD'nin kendisi tarafından yönetilmez
+    # ArgoCD k8s/kustomization.yaml'ı otomatik algılar.
+    # Aşağıdaki blok image override'ları override etmek için kullanılabilir
+    # ama gerek yok — CI zaten kustomization.yaml'ı commit'liyor.
 
   destination:
     server: https://kubernetes.default.svc
@@ -45,14 +32,19 @@ spec:
 
   syncPolicy:
     automated:
-      prune: true       # Repo'da olmayan kaynaklar silinir
-      selfHeal: true    # Drift olursa otomatik düzeltir
+      prune: true       # Repo'dan silinen kaynak cluster'dan da silinir
+      selfHeal: true    # Manuel kubectl edit yapılırsa düzeltir
     syncOptions:
       - CreateNamespace=true
       - PrunePropagationPolicy=foreground
+      - ApplyOutOfSyncOnly=true
     retry:
-      limit: 3
+      limit: 5
       backoff:
         duration: 10s
         factor: 2
-        maxDuration: 2m
+        maxDuration: 3m
+
+  # 3 dakikada bir polling (default 3m). Daha hızlı sync için
+  # GitHub webhook eklenebilir (sonra) → instant sync.
+  revisionHistoryLimit: 5

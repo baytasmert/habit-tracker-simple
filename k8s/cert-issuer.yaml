@@ -1,0 +1,39 @@
+# ─────────────────────────────────────────────────────────────────
+# cert-manager ClusterIssuer — Let's Encrypt
+# Sunum öncesi ACME_EMAIL'i kendi e-postanla değiştir.
+#
+# Not: Bu kustomization.yaml'da YOK çünkü cluster-scoped bir kaynak
+# ve cert-manager kurulduktan sonra setup-server.sh tarafından
+# bir kerelik apply edilir. Repo'ya commit'leniyor ki referans olsun.
+# ─────────────────────────────────────────────────────────────────
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: change-me@example.com
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    solvers:
+      - http01:
+          ingress:
+            class: traefik
+---
+# Staging — test ortamı (rate limit yok). İlk denemelerde bunu kullan,
+# sonra letsencrypt-prod'a geç.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: change-me@example.com
+    privateKeySecretRef:
+      name: letsencrypt-staging-account-key
+    solvers:
+      - http01:
+          ingress:
+            class: traefik
