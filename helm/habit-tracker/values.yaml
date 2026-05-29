@@ -17,7 +17,7 @@ domain: "104-249-8-24.nip.io"
 backend:
   image:
     repository: ghcr.io/baytasmert/habit-tracker-simple/backend
-    tag: latest
+    tag: 08fbf75e7d70a910f676f34129d100f5cee3ccbb
     pullPolicy: IfNotPresent
   replicas: 2
   resources:
@@ -27,7 +27,7 @@ backend:
 frontend:
   image:
     repository: ghcr.io/baytasmert/habit-tracker-simple/frontend
-    tag: latest
+    tag: 08fbf75e7d70a910f676f34129d100f5cee3ccbb
     pullPolicy: IfNotPresent
   replicas: 2
   resources:
