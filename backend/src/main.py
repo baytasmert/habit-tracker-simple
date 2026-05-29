@@ -15,6 +15,7 @@ from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_
 
 from . import models, schemas, auth, s3_client
 from .database import engine, get_db
+from .tracing import setup_tracing
 
 
 models.Base.metadata.create_all(bind=engine)
@@ -28,6 +29,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# OpenTelemetry → Jaeger (sadece ENABLE_TRACING=true ise aktif)
+setup_tracing(app, engine)
 
 # ── Prometheus ───────────────────────────────────────────────────
 REQ_TOTAL = Counter("http_requests_total", "Total HTTP requests",
