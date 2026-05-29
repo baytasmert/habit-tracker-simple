@@ -17,7 +17,7 @@ domain: "vivabit.digital"
 backend:
   image:
     repository: ghcr.io/baytasmert/habit-tracker-simple/backend
-    tag: ffdc2bbc3af6e3604aa198dd30a35c9405ec43c5
+    tag: 57272a2dbc4c5f935db790cb5e2c8cd131a49125
     pullPolicy: IfNotPresent
   replicas: 2
   resources:
@@ -27,7 +27,7 @@ backend:
 frontend:
   image:
     repository: ghcr.io/baytasmert/habit-tracker-simple/frontend
-    tag: ffdc2bbc3af6e3604aa198dd30a35c9405ec43c5
+    tag: 57272a2dbc4c5f935db790cb5e2c8cd131a49125
     pullPolicy: IfNotPresent
   replicas: 2
   resources:
