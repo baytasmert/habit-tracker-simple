@@ -108,7 +108,7 @@ story.append(P(
 ))
 if os.path.exists('docs/architecture.png'):
     try:
-        story.append(Image('docs/architecture.png', width=15 * cm, height=9 * cm))
+        story.append(Image('docs/architecture.png', width=11 * cm, height=13.1 * cm))
     except Exception:
         story.append(P('[Mimari diyagram: docs/architecture.png]'))
 story.append(Spacer(1, 4))

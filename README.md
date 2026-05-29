@@ -27,20 +27,47 @@ Uygulama gerçek bir VPS'te **k3s Kubernetes** cluster'ında çalışıyor (Helm
 
 ## 🏗️ Mimari
 
-```
-Browser ──┬──→ :8080  Frontend (NGINX, static HTML/CSS/JS)
-          └──→ :8000  Backend (FastAPI, JSON only)
+> Diyagram **Mermaid** ile yazıldı (kaynak: [docs/architecture.mmd](docs/architecture.mmd)), PNG export: [docs/architecture.png](docs/architecture.png)
 
-Backend  ──→ PostgreSQL  :5432   (User · Habit · HabitLog)
-         ──→ LocalStack  :4566   (S3 — habit photos)
-         ──→ Jaeger OTLP :4317   (OpenTelemetry tracing)
-         ──→ /metrics    →  Prometheus :9090  →  Grafana :3000
+```mermaid
+flowchart TB
+    U["🌐 Browser / Kullanıcı"]
+
+    subgraph VPS["VPS · k3s Kubernetes Cluster"]
+        T["Traefik Ingress<br/>HTTPS · Let's Encrypt · BasicAuth"]
+        FE["Frontend · NGINX :80"]
+        BE["Backend · FastAPI :8000"]
+        PG[("PostgreSQL :5432")]
+        LS["LocalStack S3 :4566"]
+        JG["Jaeger :16686 · OTLP :4317"]
+        PR["Prometheus :9090"]
+        GR["Grafana :3000 · 3 panel"]
+    end
+
+    subgraph CICD["CI/CD · GitHub"]
+        GH["GitHub Actions<br/>lint→test→newman→build→smoke"]
+        GHCR["GHCR Registry · :sha"]
+        AR["ArgoCD · GitOps"]
+    end
+
+    U -->|HTTPS| T
+    T -->|vivabit.digital| FE
+    T -->|api / jaeger / prometheus| BE
+    T -->|grafana| GR
+    FE -->|/api proxy| BE
+    BE -->|SQLAlchemy| PG
+    BE -->|boto3 S3| LS
+    BE -->|OTLP trace| JG
+    BE -->|/metrics| PR
+    PR -->|scrape| GR
+    GH -->|docker build + push| GHCR
+    GH -->|values.yaml tag bump| AR
+    AR -->|helm upgrade · auto-sync| VPS
 ```
 
-- **Frontend** ve **Backend** tamamen ayrı: backend HTML üretmez, frontend NGINX'ten static serve edilir, aralarındaki iletişim CORS açık `fetch()` ile.
+- **Frontend** ve **Backend** tamamen ayrı: backend HTML üretmez, frontend NGINX'ten static serve edilir; iletişim NGINX `/api` reverse proxy ile.
+- **GitOps:** GitHub'a push → CI build → ArgoCD k3s'e otomatik deploy.
 - **Tek `.env` dosyası** — backend, docker-compose ve k8s ConfigMap aynı kaynaktan okur.
-
-Detaylı diyagram: [docs/architecture.png](docs/architecture.png)
 
 ---
 

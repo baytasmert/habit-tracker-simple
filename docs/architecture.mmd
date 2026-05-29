@@ -1,0 +1,43 @@
+flowchart TB
+    U["🌐 Browser / Kullanıcı"]
+
+    subgraph VPS["VPS · k3s Kubernetes Cluster"]
+        T["Traefik Ingress<br/>HTTPS · Let's Encrypt<br/>BasicAuth"]
+        FE["Frontend<br/>NGINX :80"]
+        BE["Backend<br/>FastAPI :8000"]
+        PG[("PostgreSQL<br/>:5432")]
+        LS["LocalStack S3<br/>:4566"]
+        JG["Jaeger<br/>:16686 · OTLP :4317"]
+        PR["Prometheus<br/>:9090"]
+        GR["Grafana<br/>:3000 · 3 panel"]
+    end
+
+    subgraph CICD["CI/CD · GitHub"]
+        GH["GitHub Actions<br/>lint→test→newman→build→smoke"]
+        GHCR["GHCR Registry<br/>:sha imajları"]
+        AR["ArgoCD<br/>GitOps"]
+    end
+
+    U -->|"HTTPS"| T
+    T -->|"vivabit.digital"| FE
+    T -->|"api / jaeger / prometheus"| BE
+    T -->|"grafana"| GR
+    FE -->|"/api proxy"| BE
+    BE -->|"SQLAlchemy"| PG
+    BE -->|"boto3 S3"| LS
+    BE -->|"OTLP trace"| JG
+    BE -->|"/metrics"| PR
+    PR -->|"scrape"| GR
+
+    GH -->|"docker build + push"| GHCR
+    GH -->|"values.yaml tag bump"| AR
+    AR -->|"helm upgrade · auto-sync"| VPS
+
+    classDef app fill:#27AE60,color:#fff,stroke:#fff
+    classDef infra fill:#8E44AD,color:#fff,stroke:#fff
+    classDef ci fill:#7F8C8D,color:#fff,stroke:#fff
+    classDef edge fill:#E67E22,color:#fff,stroke:#fff
+    class FE,BE app
+    class PG,LS,JG,PR,GR infra
+    class GH,GHCR,AR ci
+    class T edge

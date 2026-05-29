@@ -98,7 +98,7 @@ slide(story, "1 · Problem & Çözüm", "Neden test pipeline'ı?", [
 story.append(Paragraph("2 · Mimari Diyagram", slide_title))
 story.append(hr())
 if os.path.exists("docs/architecture.png"):
-    story.append(Image("docs/architecture.png", width=24 * cm, height=13.5 * cm))
+    story.append(Image("docs/architecture.png", width=13 * cm, height=15.5 * cm))
 story.append(PageBreak())
 
 # ── 3. Test Stratejisi ────────────────────────────────────────
