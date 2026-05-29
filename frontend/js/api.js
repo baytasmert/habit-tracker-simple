@@ -35,7 +35,7 @@ async function apiCall(path, { method = "GET", body, auth = true } = {}) {
 
   if (res.status === 401 && auth) {
     clearToken();
-    window.location.href = "/";
+    window.location.href = "/login.html";
     throw new Error("Unauthorized");
   }
 
@@ -63,7 +63,7 @@ async function uploadFile(path, file) {
 
   if (res.status === 401) {
     clearToken();
-    window.location.href = "/";
+    window.location.href = "/login.html";
     throw new Error("Unauthorized");
   }
 

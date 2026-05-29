@@ -2,34 +2,68 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
-  <title>Habit Tracker — Giriş</title>
+  <title>Habit Tracker — Günlük Alışkanlık Takibi</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
-<body class="auth-page">
-  <main class="auth-card">
-    <h1>Habit Tracker</h1>
-    <p class="subtitle">Günlük alışkanlıklarını takip et.</p>
+<body class="welcome-page">
 
-    <form id="login-form">
-      <label>
-        E-posta
-        <input type="email" id="email" required autocomplete="email">
-      </label>
-      <label>
-        Şifre
-        <input type="password" id="password" required autocomplete="current-password">
-      </label>
-      <button type="submit" id="login-btn">Giriş Yap</button>
-    </form>
+  <header class="welcome-nav">
+    <div class="brand">🎯 Habit Tracker</div>
+    <nav>
+      <a href="/login.html" class="nav-link">Giriş</a>
+      <a href="/register.html" class="nav-link nav-cta">Kayıt Ol</a>
+    </nav>
+  </header>
 
-    <p class="error" id="error" hidden></p>
-    <p class="footer-link">
-      Hesabın yok mu? <a href="/register.html">Kayıt ol</a>
+  <main class="welcome-hero">
+    <h1>Küçük alışkanlıklar, <span class="accent">büyük değişimler.</span></h1>
+    <p class="hero-text">
+      Günlük alışkanlıklarını takip et, streak'ini büyüt, ilerlemeni fotoğrafla.
+      Basit, hızlı ve özgür yazılım.
     </p>
+    <div class="hero-cta">
+      <a href="/register.html" class="btn-primary">Hemen Başla</a>
+      <a href="/login.html" class="btn-ghost">Hesabım Var</a>
+    </div>
   </main>
 
+  <section class="features">
+    <article class="feature-card">
+      <div class="feature-icon">📅</div>
+      <h3>Günlük Takip</h3>
+      <p>Her gün "Bugün Yaptım" tek dokunuş. Hangi gün yaptığını işaretle, kaçırdığını gör.</p>
+    </article>
+    <article class="feature-card">
+      <div class="feature-icon">🔥</div>
+      <h3>Streak Hesabı</h3>
+      <p>Üst üste kaç gün başardın? Streak'in büyüdükçe bırakmaya direnmek daha kolay.</p>
+    </article>
+    <article class="feature-card">
+      <div class="feature-icon">📸</div>
+      <h3>İlerleme Fotoğrafları</h3>
+      <p>Habit'ine fotoğraf yükle, geçmişi gör. LocalStack S3 üstünde güvenle saklanır.</p>
+    </article>
+  </section>
+
+  <section class="how-it-works">
+    <h2>Nasıl Çalışır?</h2>
+    <ol class="steps">
+      <li><strong>Kayıt ol</strong> — e-posta ile saniyeler içinde başla.</li>
+      <li><strong>Habit ekle</strong> — "Sabah yürüyüşü", "20 dk okuma" — örnekler sınırsız.</li>
+      <li><strong>Her gün işaretle</strong> — streak'in büyüsün, alışkanlık otomatikleşsin.</li>
+    </ol>
+  </section>
+
+  <footer class="welcome-footer">
+    <p>MIT License · Marmara Üniversitesi — Bulut Mimarilerinde Test Mühendisliği · 2026</p>
+    <p>
+      <a href="https://github.com/baytasmert/habit-tracker-simple" target="_blank" rel="noopener">GitHub</a>
+      ·
+      <a href="http://localhost:8000/docs" target="_blank" rel="noopener">API Docs</a>
+    </p>
+  </footer>
+
   <script src="/js/config.js"></script>
-  <script src="/js/api.js"></script>
-  <script src="/js/login.js"></script>
+  <script src="/js/welcome.js"></script>
 </body>
 </html>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Habit Tracker — Giriş</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="auth-page">
+  <main class="auth-card">
+    <a href="/" class="back-link">← Ana sayfa</a>
+    <h1>Giriş Yap</h1>
+    <p class="subtitle">Hesabınla devam et.</p>
+
+    <form id="login-form">
+      <label>
+        E-posta
+        <input type="email" id="email" required autocomplete="email">
+      </label>
+      <label>
+        Şifre
+        <input type="password" id="password" required autocomplete="current-password">
+      </label>
+      <button type="submit" id="login-btn">Giriş Yap</button>
+    </form>
+
+    <p class="error" id="error" hidden></p>
+    <p class="footer-link">
+      Hesabın yok mu? <a href="/register.html">Kayıt ol</a>
+    </p>
+  </main>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/login.js"></script>
+</body>
+</html>

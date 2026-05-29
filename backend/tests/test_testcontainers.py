@@ -29,10 +29,13 @@ from src.main import app  # noqa: E402
 @pytest.fixture(scope="module")
 def pg_url():
     with PostgresContainer("postgres:16") as pg:
+        # testcontainers v4 API: username/password/dbname (alt çizgili attribute kaldırıldı).
+        # URL'i manuel kuruyoruz — pg.get_connection_url() Windows'ta Türkçe locale
+        # nedeniyle hostname'i UTF-8'e çeviremiyor.
         port = pg.get_exposed_port(5432)
-        user = pg.POSTGRES_USER
-        pwd = pg.POSTGRES_PASSWORD
-        db = pg.POSTGRES_DB
+        user = pg.username
+        pwd = pg.password
+        db = pg.dbname
         yield f"postgresql://{user}:{pwd}@127.0.0.1:{port}/{db}"
 
 
