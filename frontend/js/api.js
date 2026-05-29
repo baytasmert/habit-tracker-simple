@@ -90,6 +90,17 @@ window.api = {
   uploadPhoto: (id, file, logDate = null) =>
     uploadFile(`/habits/${id}/photo`, file, logDate ? { log_date: logDate } : {}),
   listPhotos: (id) => apiCall(`/habits/${id}/photos`),
+  photoUrl: async (id, key) => {
+    const headers = {};
+    const token = getToken();
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    const res = await fetch(
+      `${window.API_URL}/habits/${id}/photo-file?key=${encodeURIComponent(key)}`,
+      { headers }
+    );
+    if (!res.ok) throw new Error("Fotoğraf yüklenemedi");
+    return URL.createObjectURL(await res.blob());
+  },
 };
 
 window.auth = { getToken, setToken, clearToken, requireAuth };

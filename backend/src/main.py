@@ -20,6 +20,26 @@ from .tracing import setup_tracing
 
 models.Base.metadata.create_all(bind=engine)
 
+
+def _ensure_schema():
+    """Mevcut tablolara sonradan eklenen kolonları güvenle ekle.
+    create_all() var olan tabloyu ALTER etmez; production DB'de
+    photo_key gibi yeni kolonlar eksik kalır → 500. PostgreSQL
+    'ADD COLUMN IF NOT EXISTS' idempotent; SQLite'ta (testte tablo
+    zaten kolonla yaratıldığı için) hata try/except ile yutulur.
+    """
+    from sqlalchemy import text
+    try:
+        with engine.begin() as conn:
+            conn.execute(text(
+                "ALTER TABLE habit_logs ADD COLUMN IF NOT EXISTS photo_key VARCHAR"
+            ))
+    except Exception:
+        pass
+
+
+_ensure_schema()
+
 app = FastAPI(title="Habit Tracker API", version="1.0.0")
 
 app.add_middleware(
@@ -276,3 +296,22 @@ def list_habit_photos(
     _get_habit_for_user(db, habit_id, user.id)
     keys = s3_client.list_photos(prefix=f"habits/{habit_id}/")
     return {"habit_id": habit_id, "count": len(keys), "keys": keys}
+
+
+@app.get("/habits/{habit_id}/photo-file")
+def get_habit_photo_file(
+    habit_id: int,
+    key: str,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Foto byte'larını stream et. Browser LocalStack'e erişemez,
+    backend içeriden çekip döner. key sahipliği doğrulanır."""
+    _get_habit_for_user(db, habit_id, user.id)
+    if not key.startswith(f"habits/{habit_id}/"):
+        raise HTTPException(status_code=403, detail="Forbidden key")
+    try:
+        body, ctype = s3_client.get_photo(key)
+    except Exception:
+        raise HTTPException(status_code=404, detail="Photo not found")
+    return Response(content=body, media_type=ctype)

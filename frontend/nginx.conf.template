@@ -17,10 +17,11 @@ server {
         client_max_body_size 10M;
     }
 
-    # ── Statik dosyalar — cache 1 saat ─────────────────────────
+    # ── Statik dosyalar — her zaman revalidate ─────────────────
+    # Deploy sonrası kullanıcı eski JS/CSS görmemeli; her istekte
+    # tarayıcı sunucuya sorar (no-cache), değişmediyse 304 döner.
     location ~* \.(css|js|png|jpg|jpeg|svg|ico)$ {
-        expires 1h;
-        add_header Cache-Control "public, no-transform";
+        add_header Cache-Control "no-cache, must-revalidate";
     }
 
     # ── SPA-vari fallback yok — direkt sayfa servis ────────────

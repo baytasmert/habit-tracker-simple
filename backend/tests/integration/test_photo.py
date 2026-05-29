@@ -34,3 +34,21 @@ def test_list_photos_success(mock_list, client, auth_headers):
 def test_list_photos_unknown_habit_404(client, auth_headers):
     r = client.get("/habits/999/photos", headers=auth_headers)
     assert r.status_code == 404
+
+
+@patch("src.main.s3_client.get_photo", return_value=(b"\xff\xd8jpegdata", "image/jpeg"))
+def test_get_photo_file_success(mock_get, client, auth_headers):
+    habit = client.post("/habits", json={"name": "Yoga"}, headers=auth_headers).json()
+    key = f"habits/{habit['id']}/2026-05-29/a.jpg"
+    r = client.get(f"/habits/{habit['id']}/photo-file?key={key}", headers=auth_headers)
+    assert r.status_code == 200
+    assert r.headers["content-type"] == "image/jpeg"
+    assert r.content == b"\xff\xd8jpegdata"
+
+
+def test_get_photo_file_foreign_key_403(client, auth_headers):
+    """Başka habit'in key'i istenirse 403."""
+    habit = client.post("/habits", json={"name": "Yoga"}, headers=auth_headers).json()
+    r = client.get(f"/habits/{habit['id']}/photo-file?key=habits/999/x.jpg",
+                   headers=auth_headers)
+    assert r.status_code == 403

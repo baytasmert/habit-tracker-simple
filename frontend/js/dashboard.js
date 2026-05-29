@@ -230,7 +230,7 @@ function renderHistory(logs) {
     <li class="log-item">
       <span class="log-date">📅 ${formatDate(l.log_date)}</span>
       <span class="log-done">${l.done ? "✓" : "—"}</span>
-      ${l.photo_key ? '<span class="log-photo" title="Fotoğraf var">📷</span>' : ""}
+      ${l.photo_key ? `<button class="log-photo" data-photo-key="${escape(l.photo_key)}" title="Fotoğrafı gör">📷 Gör</button>` : ""}
       ${l.notes ? `<span class="log-note">${escape(l.notes)}</span>` : ""}
     </li>`).join("") + `</ul>`;
 }
@@ -253,6 +253,24 @@ function attachHandlers(habits) {
       if (panel.hidden) {
         panel.innerHTML = renderHistory(byId[id].logs || []);
         panel.hidden = false;
+        // Foto "Gör" butonlarına tıklanınca backend'den çek, inline göster
+        panel.querySelectorAll("[data-photo-key]").forEach(el => {
+          el.addEventListener("click", async () => {
+            if (el.dataset.loaded) return;
+            el.textContent = "📷 yükleniyor...";
+            try {
+              const url = await window.api.photoUrl(id, el.dataset.photoKey);
+              const img = document.createElement("img");
+              img.src = url;
+              img.className = "log-photo-img";
+              el.parentElement.appendChild(img);
+              el.dataset.loaded = "1";
+              el.textContent = "📷 gösterildi";
+            } catch (err) {
+              el.textContent = "📷 hata";
+            }
+          });
+        });
       } else {
         panel.hidden = true;
       }

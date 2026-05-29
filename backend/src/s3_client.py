@@ -42,3 +42,11 @@ def list_photos(prefix: str) -> list[str]:
     except ClientError:
         return []
     return [obj["Key"] for obj in resp.get("Contents", [])]
+
+
+def get_photo(key: str):
+    """S3'ten foto byte'larını + content-type döner. Backend içeriden
+    (localstack:4566) erişebildiği için tarayıcıya stream edebiliriz."""
+    client = get_s3_client()
+    obj = client.get_object(Bucket=settings.s3_bucket, Key=key)
+    return obj["Body"].read(), obj.get("ContentType", "image/jpeg")

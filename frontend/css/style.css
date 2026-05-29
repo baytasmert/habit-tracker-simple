@@ -400,6 +400,25 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 .log-date { font-weight: 600; min-width: 70px; }
 .log-done { color: var(--success); font-weight: 700; }
 .log-note { color: var(--muted); font-style: italic; }
+.log-photo {
+  width: auto;
+  padding: 2px 10px;
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.log-photo:hover { background: var(--bg); }
+.log-photo-img {
+  display: block;
+  max-width: 220px;
+  border-radius: 8px;
+  margin-top: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+.log-item { flex-wrap: wrap; }
 
 /* ── Empty state ──────────────────────── */
 .empty-state { text-align: center; padding: 48px 20px; }
@@ -425,6 +444,9 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
   z-index: 100;
   padding: 20px;
 }
+
+/* hidden attribute'u display:flex'i ezemiyor — açıkça gizle */
+.modal-overlay[hidden] { display: none; }
 
 .modal {
   background: var(--card);
