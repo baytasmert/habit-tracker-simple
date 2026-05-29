@@ -10,6 +10,7 @@ data:
     datasources:
       - name: Prometheus
         type: prometheus
+        uid: prometheus
         access: proxy
         url: http://prometheus:9090
         isDefault: true
@@ -54,6 +55,11 @@ spec:
   template:
     metadata:
       labels: { app: grafana }
+      annotations:
+        # ConfigMap (datasource/dashboard) değişince pod yeniden başlasın —
+        # Grafana provisioning'i sadece başlangıçta okur
+        checksum/dashboard: {{ .Files.Get "dashboards/habit-tracker.json" | sha256sum }}
+        checksum/config: {{ printf "%s-%s-%s" .Values.grafana.adminUser .Values.grafana.adminPassword "ds-uid-prometheus-v2" | sha256sum }}
     spec:
       containers:
         - name: grafana
