@@ -14,7 +14,6 @@ spec:
   tls:
     - hosts:
         - {{ .Values.domain }}
-        - app.{{ .Values.domain }}
         - api.{{ .Values.domain }}
         - grafana.{{ .Values.domain }}
         - jaeger.{{ .Values.domain }}
@@ -23,13 +22,6 @@ spec:
   {{- end }}
   rules:
     - host: {{ .Values.domain }}
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service: { name: frontend, port: { number: 80 } }
-    - host: app.{{ .Values.domain }}
       http:
         paths:
           - path: /
