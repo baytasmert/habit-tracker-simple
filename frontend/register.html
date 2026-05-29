@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Habit Tracker — Kayıt Ol</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="auth-page">
+  <main class="auth-card">
+    <h1>Kayıt Ol</h1>
+    <p class="subtitle">Yeni bir hesap oluştur.</p>
+
+    <form id="register-form">
+      <label>
+        Kullanıcı Adı
+        <input type="text" id="username" minlength="3" maxlength="50" required>
+      </label>
+      <label>
+        E-posta
+        <input type="email" id="email" required>
+      </label>
+      <label>
+        Şifre <span class="hint">(en az 6 karakter)</span>
+        <input type="password" id="password" minlength="6" required>
+      </label>
+      <button type="submit" id="register-btn">Kayıt Ol</button>
+    </form>
+
+    <p class="error" id="error" hidden></p>
+    <p class="footer-link">
+      Hesabın var mı? <a href="/">Giriş yap</a>
+    </p>
+  </main>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/register.js"></script>
+</body>
+</html>

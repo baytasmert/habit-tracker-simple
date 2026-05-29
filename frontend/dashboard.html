@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Habit Tracker — Panel</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="dashboard-page">
+  <header class="top-bar">
+    <h1>Habit Tracker</h1>
+    <button id="logout-btn" class="logout-btn">Çıkış</button>
+  </header>
+
+  <main class="dashboard-main">
+    <section class="card">
+      <h2>Yeni Alışkanlık Ekle</h2>
+      <form id="new-habit-form">
+        <label>
+          İsim
+          <input type="text" id="habit-name" required>
+        </label>
+        <label>
+          Açıklama
+          <input type="text" id="habit-description">
+        </label>
+        <label>
+          Kategori
+          <select id="habit-category">
+            <option value="health">Sağlık</option>
+            <option value="fitness">Spor</option>
+            <option value="study">Çalışma</option>
+            <option value="mindfulness">Farkındalık</option>
+          </select>
+        </label>
+        <label>
+          Haftada Hedef Gün
+          <input type="number" id="habit-goal" min="1" max="7" value="7">
+        </label>
+        <button type="submit" id="create-habit-btn">Oluştur</button>
+      </form>
+      <p class="error" id="new-habit-error" hidden></p>
+    </section>
+
+    <section class="card">
+      <h2>Alışkanlıklarım</h2>
+      <div id="habits-list" class="habits-list">
+        <p class="loading">Yükleniyor...</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/dashboard.js"></script>
+</body>
+</html>
