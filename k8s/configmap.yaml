@@ -3,11 +3,24 @@ kind: ConfigMap
 metadata:
   name: backend-config
 data:
-  DATABASE_URL: "postgresql://user:password@postgres:5432/habits"
+  # ── DB ─────────────────────────────────────────────
+  POSTGRES_USER: "habituser"
+  POSTGRES_PASSWORD: "habitpass"
+  POSTGRES_DB: "habits"
+  DATABASE_URL: "postgresql://habituser:habitpass@postgres:5432/habits"
+
+  # ── Auth ───────────────────────────────────────────
   SECRET_KEY: "k8s-dev-secret-change-me"
   ACCESS_TOKEN_EXPIRE_MINUTES: "60"
+
+  # ── S3 (LocalStack Community) ──────────────────────
   AWS_ENDPOINT_URL: "http://localstack:4566"
   AWS_REGION: "us-east-1"
   AWS_ACCESS_KEY_ID: "test"
   AWS_SECRET_ACCESS_KEY: "test"
   S3_BUCKET: "habit-photos"
+
+  # ── Tracing (Jaeger OTLP gRPC) ─────────────────────
+  ENABLE_TRACING: "true"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://jaeger:4317"
+  OTEL_SERVICE_NAME: "habit-tracker-backend"
