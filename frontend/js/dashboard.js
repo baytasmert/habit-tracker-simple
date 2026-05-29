@@ -37,28 +37,32 @@ async function loadHabits() {
       return { ...h, streak };
     }));
 
+    const categoryEmoji = { health: "🏥", fitness: "💪", study: "📚", mindfulness: "🧘" };
+
     listEl.innerHTML = items.map(h => `
       <div class="habit-item" data-id="${h.id}">
-        <div class="habit-info">
-          <h3>${escape(h.name)}</h3>
-          ${h.description ? `<p>${escape(h.description)}</p>` : ""}
-          <div class="habit-meta">
-            ${h.category ? `<span class="badge">${escape(h.category)}</span>` : ""}
-            <span class="badge">Hedef: ${h.goal_days_per_week} gün/hafta</span>
-            <span class="streak-badge">🔥 ${h.streak} gün</span>
+        <div class="habit-header">
+          <div class="habit-title">
+            <h3>${escape(h.name)}</h3>
+            ${h.description ? `<p>${escape(h.description)}</p>` : ""}
+            <div class="habit-meta">
+              ${h.category ? `<span class="badge">${categoryEmoji[h.category] || "📌"} ${escape(h.category)}</span>` : ""}
+              <span class="badge">🎯 ${h.goal_days_per_week} gün/hafta</span>
+            </div>
           </div>
+          <span class="streak-badge ${h.streak > 0 ? 'active' : ''}">🔥 ${h.streak} gün</span>
+        </div>
+        <div class="habit-footer">
           <div class="photo-section">
             <label class="upload-label">
               📸 Fotoğraf Yükle
               <input type="file" data-upload="${h.id}" accept="image/*" hidden>
             </label>
-            <button class="btn-secondary" data-photos="${h.id}">Fotoğrafları Listele</button>
+            <button class="btn-secondary" data-photos="${h.id}">Listele</button>
             <div class="photo-status" data-status="${h.id}"></div>
             <ul class="photo-list" data-list="${h.id}" hidden></ul>
           </div>
-        </div>
-        <div class="habit-actions">
-          <button class="btn-track" data-track="${h.id}">Bugün Yaptım</button>
+          <button class="btn-track" data-track="${h.id}">✓ Bugün Yaptım</button>
         </div>
       </div>
     `).join("");
