@@ -207,6 +207,14 @@ jobs:
           fi
           git add helm/habit-tracker/values.yaml
           git commit -m "ci: bump image tags to ${{ github.sha }} [skip ci]"
-          git push
-          kubectl logs deployment/jaeger --tail=50 || true
-          kubectl logs deployment/localstack --tail=50 || true
+          # Remote bu sırada ilerlemiş olabilir (başka push) — rebase + retry
+          for i in 1 2 3 4 5; do
+            if git push; then
+              echo "Pushed on attempt $i"
+              exit 0
+            fi
+            echo "Push reddedildi, rebase deneniyor ($i)..."
+            git pull --rebase origin main || true
+          done
+          echo "5 denemede push edilemedi" >&2
+          exit 1
