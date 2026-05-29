@@ -1,0 +1,90 @@
+# ─────────────────────────────────────────────────────────────────
+# Default values — production override'lar için:
+#   helm upgrade --install habit-tracker ./helm/habit-tracker \
+#     --set domain=app.example.com \
+#     --set backend.image.tag=abc123
+#
+# ArgoCD değerleri k8s/argocd/application.yaml içindeki helm.values
+# bloğundan gelir.
+# ─────────────────────────────────────────────────────────────────
+
+# ── Domain ────────────────────────────────────────────────────────
+# nip.io: domain gerektirmez — IP adresini tire ile yaz
+# Örnek: 104-249-8-24.nip.io
+domain: "104-249-8-24.nip.io"
+
+# ── Imajlar ────────────────────────────────────────────────────────
+backend:
+  image:
+    repository: ghcr.io/baytasmert/habit-tracker-simple/backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicas: 2
+  resources:
+    requests: { memory: 128Mi, cpu: 100m }
+    limits: { memory: 512Mi, cpu: 500m }
+
+frontend:
+  image:
+    repository: ghcr.io/baytasmert/habit-tracker-simple/frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicas: 2
+  resources:
+    requests: { memory: 32Mi, cpu: 50m }
+    limits: { memory: 128Mi, cpu: 200m }
+
+# ── Veritabanı ────────────────────────────────────────────────────
+postgres:
+  image: postgres:16-alpine
+  user: habituser
+  password: habitpass
+  db: habits
+  resources:
+    requests: { memory: 128Mi, cpu: 100m }
+    limits: { memory: 512Mi, cpu: 500m }
+
+# ── Auth ──────────────────────────────────────────────────────────
+secretKey: "change-me-in-production"
+accessTokenExpireMinutes: 60
+
+# ── LocalStack S3 ─────────────────────────────────────────────────
+localstack:
+  image: localstack/localstack:3.0
+  s3Bucket: habit-photos
+  resources:
+    requests: { memory: 256Mi, cpu: 100m }
+    limits: { memory: 1Gi, cpu: 500m }
+
+# ── Jaeger ────────────────────────────────────────────────────────
+jaeger:
+  image: jaegertracing/all-in-one:1.55
+  resources:
+    requests: { memory: 128Mi, cpu: 50m }
+    limits: { memory: 512Mi, cpu: 300m }
+
+# ── Prometheus ────────────────────────────────────────────────────
+prometheus:
+  image: prom/prometheus:v2.51.0
+  resources:
+    requests: { memory: 128Mi, cpu: 50m }
+    limits: { memory: 512Mi, cpu: 300m }
+
+# ── Grafana ───────────────────────────────────────────────────────
+grafana:
+  image: grafana/grafana:10.4.0
+  adminUser: admin
+  adminPassword: admin
+  resources:
+    requests: { memory: 128Mi, cpu: 50m }
+    limits: { memory: 512Mi, cpu: 300m }
+
+# ── Ingress ───────────────────────────────────────────────────────
+ingress:
+  enabled: true
+  className: traefik
+  tls: true
+  certIssuer: letsencrypt-prod
+
+# ── Image pull secret (GHCR) ──────────────────────────────────────
+imagePullSecret: ghcr-pull

@@ -1,103 +1,102 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────
-# Hetzner CX22 (Ubuntu 22.04) — k3s + cert-manager + ArgoCD kurulumu.
-# Sunucuda tek seferlik çalıştırılır.
+# VPS (Ubuntu 22.04) — k3s + Helm + cert-manager + ArgoCD kurulumu
+# Tek seferlik çalıştırılır.
 #
-# Kullanım:
-#   ssh root@<HETZNER-IP>
+# Kullanım (sunucuda):
 #   curl -sSL https://raw.githubusercontent.com/baytasmert/habit-tracker-simple/main/scripts/setup-server.sh | bash
-#
-# Veya repo'yu klonladıktan sonra:
-#   bash scripts/setup-server.sh
 # ─────────────────────────────────────────────────────────────────
 set -euo pipefail
 
-echo ""
 echo "════════════════════════════════════════════════════════════"
-echo "  Habit Tracker Simple — Production Cluster Setup"
+echo "  Habit Tracker — Production Cluster Setup"
 echo "════════════════════════════════════════════════════════════"
-echo ""
 
 # ── 0. Hazırlık ─────────────────────────────────────────────────
 apt-get update -q
 apt-get install -y -q curl git ca-certificates
 
-# ── 1. k3s kur (Rancher Lightweight Kubernetes) ────────────────
-echo "▸ k3s kuruluyor…"
-curl -sfL https://get.k3s.io | sh -s - \
-    --write-kubeconfig-mode 644 \
-    --disable=servicelb     # Traefik kalsın, ServiceLB'yi devre dışı bırak
+# ── 1. k3s ──────────────────────────────────────────────────────
+echo ""
+echo "▸ [1/4] k3s kuruluyor…"
+curl -sfL https://get.k3s.io | sh -s - --write-kubeconfig-mode 644
 
 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-kubectl wait --for=condition=Ready node --all --timeout=120s
-
-# kubectl tab tamamlama
 echo 'export KUBECONFIG=/etc/rancher/k3s/k3s.yaml' >> ~/.bashrc
-echo 'source <(kubectl completion bash)' >> ~/.bashrc
 
-# ── 2. cert-manager (Let's Encrypt için) ───────────────────────
-echo "▸ cert-manager kuruluyor…"
-kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.5/cert-manager.yaml
-kubectl wait --for=condition=Available deployment \
-    --all -n cert-manager --timeout=180s
+kubectl wait --for=condition=Ready node --all --timeout=120s
+echo "  k3s hazır ✓"
 
-# ── 3. ArgoCD ──────────────────────────────────────────────────
-echo "▸ ArgoCD kuruluyor…"
-kubectl create namespace argocd 2>/dev/null || true
-kubectl apply -n argocd \
-    -f https://raw.githubusercontent.com/argoproj/argo-cd/v2.10.5/manifests/install.yaml
-kubectl wait --for=condition=Available deployment \
-    --all -n argocd --timeout=300s
-
-# ArgoCD UI ingress (Traefik üzerinden HTTPS — opsiyonel, kullanıcı sonra DNS ekler)
+# ── 2. Helm ─────────────────────────────────────────────────────
 echo ""
-echo "▸ ArgoCD admin şifresi:"
-kubectl -n argocd get secret argocd-initial-admin-secret \
-    -o jsonpath="{.data.password}" | base64 -d
-echo ""
+echo "▸ [2/4] Helm kuruluyor…"
+curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+echo "  Helm hazır ✓"
 
-# ── 4. GHCR pull secret (private imaj çekmek için) ─────────────
+# ── 3. cert-manager (Helm ile) ──────────────────────────────────
 echo ""
-echo "▸ GHCR pull secret oluşturmak için:"
-echo "   kubectl create secret docker-registry ghcr-pull \\"
-echo "     --docker-server=ghcr.io \\"
-echo "     --docker-username=<github-username> \\"
-echo "     --docker-password=<github-PAT> \\"
-echo "     --docker-email=<email>"
-echo ""
+echo "▸ [3/4] cert-manager kuruluyor…"
+helm repo add jetstack https://charts.jetstack.io --force-update
+helm repo update
 
-# ── Bitti ──────────────────────────────────────────────────────
+helm upgrade --install cert-manager jetstack/cert-manager \
+  --namespace cert-manager \
+  --create-namespace \
+  --version v1.14.5 \
+  --set installCRDs=true \
+  --wait
+
+echo "  cert-manager hazır ✓"
+
+# ── 4. ArgoCD (Helm ile) ────────────────────────────────────────
+echo ""
+echo "▸ [4/4] ArgoCD kuruluyor…"
+helm repo add argo https://argoproj.github.io/argo-helm --force-update
+helm repo update
+
+helm upgrade --install argocd argo/argo-cd \
+  --namespace argocd \
+  --create-namespace \
+  --set server.insecure=true \
+  --wait --timeout 5m
+
+echo "  ArgoCD hazır ✓"
+
+# ── Bilgiler ────────────────────────────────────────────────────
+ARGOCD_PASS=$(kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath="{.data.password}" | base64 -d)
+
+SERVER_IP=$(curl -s ifconfig.me)
+
 cat <<EOF
 
 ════════════════════════════════════════════════════════════
-✅ Cluster hazır. Sıradakiler:
+✅ Kurulum tamamlandı!
 
-1. DNS A kayıtlarını sunucu IP'sine yönlendir:
-   app.<domain>         A   $(curl -s ifconfig.me)
-   api.<domain>         A   $(curl -s ifconfig.me)
-   grafana.<domain>     A   $(curl -s ifconfig.me)
-   jaeger.<domain>      A   $(curl -s ifconfig.me)
-   prometheus.<domain>  A   $(curl -s ifconfig.me)
-   argocd.<domain>      A   $(curl -s ifconfig.me)
+ArgoCD Bilgileri:
+  kubectl port-forward svc/argocd-server -n argocd 8090:80
+  URL:      http://localhost:8090
+  Kullanıcı: admin
+  Şifre:    ${ARGOCD_PASS}
 
-   Domain yoksa nip.io kullanabilirsin:
-   app.$(curl -s ifconfig.me | tr . -).nip.io
+Sunucu IP: ${SERVER_IP}
+nip.io domain prefix: $(echo $SERVER_IP | tr . -)
 
-2. k8s/ingress.yaml ve k8s/cert-issuer.yaml içindeki
-   example.com ve change-me@example.com yerine kendi
-   domain ve email'ini yaz, commit'le ve push'la.
+Sıradaki adımlar:
+  1. GHCR pull secret oluştur:
+     kubectl create secret docker-registry ghcr-pull \\
+       --docker-server=ghcr.io \\
+       --docker-username=baytasmert \\
+       --docker-password=<GITHUB_PAT> \\
+       --docker-email=mertbaytas@gmail.com
 
-3. ArgoCD'ye Application kaydı:
-   kubectl apply -f https://raw.githubusercontent.com/\
-baytasmert/habit-tracker-simple/main/k8s/argocd/application.yaml
+  2. cert-manager issuer kur:
+     kubectl apply -f https://raw.githubusercontent.com/baytasmert/habit-tracker-simple/main/k8s/cert-issuer.yaml
 
-4. cert-manager Let's Encrypt issuer:
-   kubectl apply -f https://raw.githubusercontent.com/\
-baytasmert/habit-tracker-simple/main/k8s/cert-issuer.yaml
+  3. ArgoCD Application kur:
+     kubectl apply -f https://raw.githubusercontent.com/baytasmert/habit-tracker-simple/main/k8s/argocd/application.yaml
 
-5. ArgoCD UI:
-   kubectl port-forward svc/argocd-server -n argocd 8090:443
-   https://localhost:8090     (admin / yukarıdaki şifre)
-
+  4. Deploy izle:
+     kubectl get pods -w
 ════════════════════════════════════════════════════════════
 EOF

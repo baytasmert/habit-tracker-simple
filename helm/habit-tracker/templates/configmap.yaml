@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  labels: {{- include "habit-tracker.labels" . | nindent 4 }}
+data:
+  POSTGRES_USER: {{ .Values.postgres.user | quote }}
+  POSTGRES_PASSWORD: {{ .Values.postgres.password | quote }}
+  POSTGRES_DB: {{ .Values.postgres.db | quote }}
+  DATABASE_URL: "postgresql://{{ .Values.postgres.user }}:{{ .Values.postgres.password }}@postgres:5432/{{ .Values.postgres.db }}"
+  SECRET_KEY: {{ .Values.secretKey | quote }}
+  ACCESS_TOKEN_EXPIRE_MINUTES: {{ .Values.accessTokenExpireMinutes | quote }}
+  AWS_ENDPOINT_URL: "http://localstack:4566"
+  AWS_REGION: "us-east-1"
+  AWS_ACCESS_KEY_ID: "test"
+  AWS_SECRET_ACCESS_KEY: "test"
+  S3_BUCKET: {{ .Values.localstack.s3Bucket | quote }}
+  ENABLE_TRACING: "true"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://jaeger:4317"
+  OTEL_SERVICE_NAME: "habit-tracker-backend"

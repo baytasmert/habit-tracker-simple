@@ -145,24 +145,19 @@ jobs:
           docker pull ${{ needs.build.outputs.frontend-image }}:${{ github.sha }}
           kind load docker-image ${{ needs.build.outputs.backend-image }}:${{ github.sha }} --name habit-tracker
           kind load docker-image ${{ needs.build.outputs.frontend-image }}:${{ github.sha }} --name habit-tracker
-      - name: Install kustomize
+      - name: Install Helm
+        run: curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+      - name: Helm template + apply (Kind — ingress disabled)
         run: |
-          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
-          sudo mv kustomize /usr/local/bin/
-      - name: Set image tags + render manifests
-        working-directory: k8s
-        run: |
-          kustomize edit set image \
-            backend=${{ needs.build.outputs.backend-image }}:${{ github.sha }} \
-            frontend=${{ needs.build.outputs.frontend-image }}:${{ github.sha }}
-          kustomize build . > /tmp/manifests.yaml
-      - name: Apply manifests
-        run: |
-          # Ingress'i Kind'da test etmiyoruz (Traefik kurulu değil) — sadece
-          # core resources'leri uygula.
-          kubectl apply -f /tmp/manifests.yaml --prune=false || true
-          # Ingress kaynağını ayrıca çıkar (Kind'da Traefik yok)
-          kubectl delete ingress habit-tracker-ingress --ignore-not-found
+          helm template habit-tracker helm/habit-tracker \
+            --set backend.image.repository=${{ needs.build.outputs.backend-image }} \
+            --set backend.image.tag=${{ github.sha }} \
+            --set frontend.image.repository=${{ needs.build.outputs.frontend-image }} \
+            --set frontend.image.tag=${{ github.sha }} \
+            --set ingress.enabled=false \
+            --set backend.image.pullPolicy=IfNotPresent \
+            --set frontend.image.pullPolicy=IfNotPresent \
+            | kubectl apply -f -
           kubectl rollout status deployment/postgres --timeout=2m
           kubectl rollout status deployment/backend --timeout=3m
           kubectl rollout status deployment/frontend --timeout=2m
@@ -195,25 +190,22 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Install kustomize
+      - name: Bump image tags in Helm values.yaml
         run: |
-          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
-          sudo mv kustomize /usr/local/bin/
-      - name: Bump image tags in kustomization.yaml
-        working-directory: k8s
-        run: |
-          kustomize edit set image \
-            backend=${{ needs.build.outputs.backend-image }}:${{ github.sha }} \
-            frontend=${{ needs.build.outputs.frontend-image }}:${{ github.sha }}
+          BACKEND_TAG="${{ github.sha }}"
+          FRONTEND_TAG="${{ github.sha }}"
+          # values.yaml içindeki tag satırlarını sed ile güncelle
+          sed -i "s|^    tag:.*|    tag: ${BACKEND_TAG}|1" helm/habit-tracker/values.yaml
+          sed -i "0,/^    tag:.*/! s|^    tag:.*|    tag: ${FRONTEND_TAG}|1" helm/habit-tracker/values.yaml
       - name: Commit & push image bump
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet k8s/kustomization.yaml; then
+          if git diff --quiet helm/habit-tracker/values.yaml; then
             echo "No image change — skipping commit."
             exit 0
           fi
-          git add k8s/kustomization.yaml
+          git add helm/habit-tracker/values.yaml
           git commit -m "ci: bump image tags to ${{ github.sha }} [skip ci]"
           git push
           kubectl logs deployment/jaeger --tail=50 || true

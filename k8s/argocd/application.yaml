@@ -1,12 +1,11 @@
 # ─────────────────────────────────────────────────────────────────
-# ArgoCD Application — GitOps for habit-tracker-simple
+# ArgoCD Application — Helm chart source
 #
-# Watch'ler:  k8s/ klasörü (kustomization.yaml)
-# Trigger:    Repo'ya her commit (CI tarafından image bump dahil)
-# Action:     kustomize build → kubectl apply (otomatik)
-#
-# Sunucuya tek seferlik apply:
+# Sunucuda tek seferlik apply:
 #   kubectl apply -f k8s/argocd/application.yaml
+#
+# CI her push'ta helm/habit-tracker/values.yaml içindeki image tag'i
+# günceller → ArgoCD sync → cluster'da yeni versiyon
 # ─────────────────────────────────────────────────────────────────
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -21,10 +20,11 @@ spec:
   source:
     repoURL: https://github.com/baytasmert/habit-tracker-simple.git
     targetRevision: main
-    path: k8s
-    # ArgoCD k8s/kustomization.yaml'ı otomatik algılar.
-    # Aşağıdaki blok image override'ları override etmek için kullanılabilir
-    # ama gerek yok — CI zaten kustomization.yaml'ı commit'liyor.
+    path: helm/habit-tracker        # Helm chart'ın yolu
+    helm:
+      releaseName: habit-tracker
+      valueFiles:
+        - values.yaml               # default values (CI tag'leri buraya yazar)
 
   destination:
     server: https://kubernetes.default.svc
@@ -32,11 +32,10 @@ spec:
 
   syncPolicy:
     automated:
-      prune: true       # Repo'dan silinen kaynak cluster'dan da silinir
-      selfHeal: true    # Manuel kubectl edit yapılırsa düzeltir
+      prune: true
+      selfHeal: true
     syncOptions:
       - CreateNamespace=true
-      - PrunePropagationPolicy=foreground
       - ApplyOutOfSyncOnly=true
     retry:
       limit: 5
@@ -45,6 +44,4 @@ spec:
         factor: 2
         maxDuration: 3m
 
-  # 3 dakikada bir polling (default 3m). Daha hızlı sync için
-  # GitHub webhook eklenebilir (sonra) → instant sync.
   revisionHistoryLimit: 5

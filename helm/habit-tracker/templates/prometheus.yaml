@@ -1,0 +1,58 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  labels: {{- include "habit-tracker.labels" . | nindent 4 }}
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+    scrape_configs:
+      - job_name: 'habit-tracker-backend'
+        metrics_path: /metrics
+        static_configs:
+          - targets: ['backend:8000']
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  labels: {{- include "habit-tracker.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: prometheus }
+  template:
+    metadata:
+      labels: { app: prometheus }
+    spec:
+      containers:
+        - name: prometheus
+          image: {{ .Values.prometheus.image }}
+          ports:
+            - containerPort: 9090
+          volumeMounts:
+            - { name: config, mountPath: /etc/prometheus }
+          readinessProbe:
+            httpGet: { path: /-/ready, port: 9090 }
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources: {{- toYaml .Values.prometheus.resources | nindent 12 }}
+      volumes:
+        - name: config
+          configMap: { name: prometheus-config }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  labels: {{- include "habit-tracker.labels" . | nindent 4 }}
+spec:
+  selector: { app: prometheus }
+  ports:
+    - port: 9090
+      targetPort: 9090

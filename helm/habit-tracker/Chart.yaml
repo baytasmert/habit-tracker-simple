@@ -1,0 +1,14 @@
+apiVersion: v2
+name: habit-tracker
+description: Günlük alışkanlık takip uygulaması — FastAPI + PostgreSQL + NGINX + monitoring stack
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - habit-tracker
+  - fastapi
+  - postgresql
+home: https://github.com/baytasmert/habit-tracker-simple
+maintainers:
+  - name: Mert Baytaş
+    email: mertbaytas@gmail.com

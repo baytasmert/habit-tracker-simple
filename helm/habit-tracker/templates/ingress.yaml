@@ -1,0 +1,59 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: habit-tracker-ingress
+  labels: {{- include "habit-tracker.labels" . | nindent 4 }}
+  annotations:
+    cert-manager.io/cluster-issuer: {{ .Values.ingress.certIssuer }}
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- if .Values.ingress.tls }}
+  tls:
+    - hosts:
+        - app.{{ .Values.domain }}
+        - api.{{ .Values.domain }}
+        - grafana.{{ .Values.domain }}
+        - jaeger.{{ .Values.domain }}
+        - prometheus.{{ .Values.domain }}
+      secretName: habit-tracker-tls
+  {{- end }}
+  rules:
+    - host: app.{{ .Values.domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: frontend, port: { number: 80 } }
+    - host: api.{{ .Values.domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: backend, port: { number: 8000 } }
+    - host: grafana.{{ .Values.domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: grafana, port: { number: 3000 } }
+    - host: jaeger.{{ .Values.domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: jaeger, port: { number: 16686 } }
+    - host: prometheus.{{ .Values.domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: prometheus, port: { number: 9090 } }
+{{- end }}

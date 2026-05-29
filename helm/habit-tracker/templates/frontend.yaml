@@ -1,0 +1,43 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels: {{- include "habit-tracker.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.frontend.replicas }}
+  selector:
+    matchLabels: { app: frontend }
+  template:
+    metadata:
+      labels: { app: frontend }
+    spec:
+      {{- if .Values.imagePullSecret }}
+      imagePullSecrets:
+        - name: {{ .Values.imagePullSecret }}
+      {{- end }}
+      containers:
+        - name: frontend
+          image: {{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}
+          imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
+          ports:
+            - containerPort: 80
+          env:
+            - { name: PORT, value: "80" }
+            - { name: BACKEND_URL, value: "http://backend:8000" }
+          readinessProbe:
+            httpGet: { path: /healthz, port: 80 }
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources: {{- toYaml .Values.frontend.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  labels: {{- include "habit-tracker.labels" . | nindent 4 }}
+spec:
+  selector: { app: frontend }
+  ports:
+    - port: 80
+      targetPort: 80
