@@ -13,6 +13,7 @@ spec:
   {{- if .Values.ingress.tls }}
   tls:
     - hosts:
+        - {{ .Values.domain }}
         - app.{{ .Values.domain }}
         - api.{{ .Values.domain }}
         - grafana.{{ .Values.domain }}
@@ -21,6 +22,13 @@ spec:
       secretName: habit-tracker-tls
   {{- end }}
   rules:
+    - host: {{ .Values.domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: frontend, port: { number: 80 } }
     - host: app.{{ .Values.domain }}
       http:
         paths:
