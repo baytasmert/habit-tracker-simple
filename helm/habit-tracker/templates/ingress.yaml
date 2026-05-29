@@ -39,7 +39,7 @@ spec:
               service: { name: grafana, port: { number: 3000 } }
 ---
 # ─────────────────────────────────────────────────────────────────
-# PROTECTED ingress — BasicAuth ile korunur (admin / habit2026):
+# PROTECTED ingress — BasicAuth ile korunur (kimlik: .env BASIC_AUTH_*):
 #   api.vivabit.digital         → backend (Swagger /docs + /metrics)
 #   jaeger.vivabit.digital      → tracing UI
 #   prometheus.vivabit.digital  → metrik UI

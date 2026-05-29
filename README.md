@@ -15,11 +15,13 @@ Uygulama gerçek bir VPS'te **k3s Kubernetes** cluster'ında çalışıyor (Helm
 | Servis | URL | Erişim |
 |--------|-----|--------|
 | **Uygulama** | https://vivabit.digital | Herkese açık |
-| Grafana | https://grafana.vivabit.digital | admin / admin |
-| ArgoCD | https://argocd.vivabit.digital | admin / (cluster secret) |
-| API Docs (Swagger) | https://api.vivabit.digital/docs | BasicAuth: admin / habit2026 |
-| Jaeger (tracing) | https://jaeger.vivabit.digital | BasicAuth: admin / habit2026 |
-| Prometheus | https://prometheus.vivabit.digital | BasicAuth: admin / habit2026 |
+| Grafana | https://grafana.vivabit.digital | 🔒 Login |
+| ArgoCD | https://argocd.vivabit.digital | 🔒 Login |
+| API Docs (Swagger) | https://api.vivabit.digital/docs | 🔒 BasicAuth |
+| Jaeger (tracing) | https://jaeger.vivabit.digital | 🔒 BasicAuth |
+| Prometheus | https://prometheus.vivabit.digital | 🔒 BasicAuth |
+
+> 🔑 Korumalı servislerin kimlik bilgileri repoda **düz metin tutulmaz** — `.env` (lokal) ve cluster Secret'larında saklanır. Demo erişimi için kimlik bilgileri sunumda/özelde paylaşılır.
 
 🎥 **Demo videosu:** _(buraya Drive/YouTube linki — sunumda canlı demo çökerse yedek)_
 
@@ -86,7 +88,7 @@ docker-compose up -d --build
 | **ReDoc** | http://localhost:8000/redoc | Alternatif API dokümanı |
 | **/health** | http://localhost:8000/health | Sağlık kontrolü (JSON) |
 | **/metrics** | http://localhost:8000/metrics | Prometheus formatı |
-| **Grafana** | http://localhost:3000 | admin / admin · 3 panel |
+| **Grafana** | http://localhost:3000 | login (bkz. `.env`) · 3 panel |
 | **Prometheus** | http://localhost:9090 | Metrik sorgu UI |
 | **Jaeger UI** | http://localhost:16686 | Distributed tracing (+5 bonus) |
 | **LocalStack** | http://localhost:4566 | S3 emülatörü (Community Edition) |
