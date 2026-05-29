@@ -1,0 +1,143 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository }}
+
+jobs:
+
+  # ── 1. Lint ───────────────────────────────────────────────────
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - run: pip install flake8
+      - name: Backend lint
+        working-directory: backend
+        run: flake8 src tests --max-line-length=120
+
+  # ── 2. Test (pytest + coverage) ───────────────────────────────
+  test:
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: Install dependencies
+        working-directory: backend
+        run: |
+          pip install -r requirements.txt
+      - name: Run pytest with coverage (incl. Testcontainers)
+        working-directory: backend
+        run: pytest
+
+  # ── 3. Build & Push (GHCR) ────────────────────────────────────
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      backend-image: ${{ steps.tags.outputs.backend }}
+      frontend-image: ${{ steps.tags.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: tags
+        name: Compute image tags
+        run: |
+          BACKEND="${{ env.REGISTRY }}/${{ github.repository }}/backend"
+          FRONTEND="${{ env.REGISTRY }}/${{ github.repository }}/frontend"
+          BACKEND_LOWER=$(echo "$BACKEND" | tr '[:upper:]' '[:lower:]')
+          FRONTEND_LOWER=$(echo "$FRONTEND" | tr '[:upper:]' '[:lower:]')
+          echo "backend=$BACKEND_LOWER" >> $GITHUB_OUTPUT
+          echo "frontend=$FRONTEND_LOWER" >> $GITHUB_OUTPUT
+      - name: Build & push backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ steps.tags.outputs.backend }}:${{ github.sha }}
+            ${{ steps.tags.outputs.backend }}:latest
+      - name: Build & push frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ${{ steps.tags.outputs.frontend }}:${{ github.sha }}
+            ${{ steps.tags.outputs.frontend }}:latest
+
+  # ── 4. Deploy to Kind (K8s) + smoke ──────────────────────────
+  deploy-smoke:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create Kind cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: habit-tracker
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Pull and load images into Kind
+        run: |
+          docker pull ${{ needs.build.outputs.backend-image }}:${{ github.sha }}
+          docker pull ${{ needs.build.outputs.frontend-image }}:${{ github.sha }}
+          kind load docker-image ${{ needs.build.outputs.backend-image }}:${{ github.sha }} --name habit-tracker
+          kind load docker-image ${{ needs.build.outputs.frontend-image }}:${{ github.sha }} --name habit-tracker
+      - name: Render manifests with image tags
+        env:
+          BACKEND_IMAGE: ${{ needs.build.outputs.backend-image }}:${{ github.sha }}
+          FRONTEND_IMAGE: ${{ needs.build.outputs.frontend-image }}:${{ github.sha }}
+        run: |
+          mkdir -p rendered
+          for f in k8s/*.yaml; do
+            sed "s|__BACKEND_IMAGE__|$BACKEND_IMAGE|g; s|__FRONTEND_IMAGE__|$FRONTEND_IMAGE|g" "$f" > "rendered/$(basename $f)"
+          done
+      - name: Apply manifests
+        run: |
+          kubectl apply -f rendered/configmap.yaml
+          kubectl apply -f rendered/postgres.yaml
+          kubectl rollout status deployment/postgres --timeout=2m
+          kubectl apply -f rendered/backend.yaml
+          kubectl apply -f rendered/frontend.yaml
+          kubectl rollout status deployment/backend --timeout=3m
+          kubectl rollout status deployment/frontend --timeout=2m
+      - name: Smoke test (port-forward + curl)
+        run: |
+          kubectl port-forward svc/backend 8000:8000 &
+          PF_PID=$!
+          sleep 5
+          curl --fail --retry 10 --retry-delay 3 http://localhost:8000/health
+          curl --fail http://localhost:8000/metrics | head -20
+          kill $PF_PID || true
+      - name: Debug on failure
+        if: failure()
+        run: |
+          kubectl get pods -A
+          kubectl describe pods
+          kubectl logs deployment/backend --tail=100 || true
