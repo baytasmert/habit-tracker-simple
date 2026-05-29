@@ -190,31 +190,32 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Bump image tags in Helm values.yaml
-        run: |
-          BACKEND_TAG="${{ github.sha }}"
-          FRONTEND_TAG="${{ github.sha }}"
-          # values.yaml içindeki tag satırlarını sed ile güncelle
-          sed -i "s|^    tag:.*|    tag: ${BACKEND_TAG}|1" helm/habit-tracker/values.yaml
-          sed -i "0,/^    tag:.*/! s|^    tag:.*|    tag: ${FRONTEND_TAG}|1" helm/habit-tracker/values.yaml
-      - name: Commit & push image bump
+      - name: Bump image tag & push (conflict-free)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet helm/habit-tracker/values.yaml; then
-            echo "No image change — skipping commit."
-            exit 0
-          fi
-          git add helm/habit-tracker/values.yaml
-          git commit -m "ci: bump image tags to ${{ github.sha }} [skip ci]"
-          # Remote bu sırada ilerlemiş olabilir (başka push) — rebase + retry
+          SHA="${{ github.sha }}"
+          F="helm/habit-tracker/values.yaml"
+          # Her denemede taze main'e sıfırla, tag'i yeniden uygula → rebase
+          # çakışması olmaz (aynı satırı iki taraf da değiştirmiyor; biz
+          # her seferinde en günceli baz alıp üstüne yazıyoruz).
           for i in 1 2 3 4 5; do
-            if git push; then
+            git fetch origin main
+            git reset --hard origin/main
+            sed -i "s|^    tag:.*|    tag: ${SHA}|1" "$F"
+            sed -i "0,/^    tag:.*/! s|^    tag:.*|    tag: ${SHA}|1" "$F"
+            if git diff --quiet "$F"; then
+              echo "Tag zaten güncel — atlanıyor."
+              exit 0
+            fi
+            git add "$F"
+            git commit -m "ci: bump image tags to ${SHA} [skip ci]"
+            if git push origin HEAD:main; then
               echo "Pushed on attempt $i"
               exit 0
             fi
-            echo "Push reddedildi, rebase deneniyor ($i)..."
-            git pull --rebase origin main || true
+            echo "Push reddedildi, taze main ile tekrar ($i)..."
+            sleep 3
           done
           echo "5 denemede push edilemedi" >&2
           exit 1
