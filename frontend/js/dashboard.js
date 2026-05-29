@@ -45,9 +45,18 @@ async function loadHabits() {
           <div class="habit-meta">
             ${h.category ? `<span class="badge">${escape(h.category)}</span>` : ""}
             <span class="badge">Hedef: ${h.goal_days_per_week} gün/hafta</span>
+            <span class="streak-badge">🔥 ${h.streak} gün</span>
+          </div>
+          <div class="photo-section">
+            <label class="upload-label">
+              📸 Fotoğraf Yükle
+              <input type="file" data-upload="${h.id}" accept="image/*" hidden>
+            </label>
+            <button class="btn-secondary" data-photos="${h.id}">Fotoğrafları Listele</button>
+            <div class="photo-status" data-status="${h.id}"></div>
+            <ul class="photo-list" data-list="${h.id}" hidden></ul>
           </div>
         </div>
-        <span class="streak-badge">🔥 ${h.streak} gün</span>
         <div class="habit-actions">
           <button class="btn-track" data-track="${h.id}">Bugün Yaptım</button>
         </div>
@@ -66,6 +75,48 @@ async function loadHabits() {
           alert("Hata: " + err.message);
           btn.disabled = false;
           btn.textContent = "Bugün Yaptım";
+        }
+      });
+    });
+
+    listEl.querySelectorAll("[data-upload]").forEach(input => {
+      input.addEventListener("change", async (e) => {
+        const id = input.dataset.upload;
+        const file = e.target.files[0];
+        if (!file) return;
+        const status = listEl.querySelector(`[data-status="${id}"]`);
+        status.textContent = "Yükleniyor...";
+        status.className = "photo-status uploading";
+        try {
+          const res = await window.api.uploadPhoto(id, file);
+          status.textContent = `✓ ${file.name} (${(res.size_bytes / 1024).toFixed(1)} KB) S3'e yüklendi`;
+          status.className = "photo-status success";
+        } catch (err) {
+          status.textContent = `✗ ${err.message}`;
+          status.className = "photo-status error";
+        }
+        input.value = "";
+      });
+    });
+
+    listEl.querySelectorAll("[data-photos]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const id = btn.dataset.photos;
+        const ul = listEl.querySelector(`[data-list="${id}"]`);
+        btn.disabled = true;
+        try {
+          const res = await window.api.listPhotos(id);
+          if (res.count === 0) {
+            ul.innerHTML = "<li class='empty'>Henüz fotoğraf yok.</li>";
+          } else {
+            ul.innerHTML = res.keys.map(k => `<li>📄 ${escape(k)}</li>`).join("");
+          }
+          ul.hidden = false;
+        } catch (err) {
+          ul.innerHTML = `<li class='error'>${escape(err.message)}</li>`;
+          ul.hidden = false;
+        } finally {
+          btn.disabled = false;
         }
       });
     });

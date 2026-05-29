@@ -47,6 +47,33 @@ async function apiCall(path, { method = "GET", body, auth = true } = {}) {
   return data;
 }
 
+async function uploadFile(path, file) {
+  const headers = {};
+  const token = getToken();
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const fd = new FormData();
+  fd.append("file", file);
+
+  const res = await fetch(`${window.API_URL}${path}`, {
+    method: "POST",
+    headers,
+    body: fd,
+  });
+
+  if (res.status === 401) {
+    clearToken();
+    window.location.href = "/";
+    throw new Error("Unauthorized");
+  }
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data?.detail || `Upload başarısız (${res.status})`);
+  }
+  return data;
+}
+
 window.api = {
   register: (username, email, password) =>
     apiCall("/register", { method: "POST", body: { username, email, password }, auth: false }),
@@ -57,6 +84,8 @@ window.api = {
   trackHabit: (id, done = true, notes = null) =>
     apiCall(`/habits/${id}/track`, { method: "POST", body: { done, notes } }),
   getStreak: (id) => apiCall(`/habits/${id}/streak`),
+  uploadPhoto: (id, file) => uploadFile(`/habits/${id}/photo`, file),
+  listPhotos: (id) => apiCall(`/habits/${id}/photos`),
 };
 
 window.auth = { getToken, setToken, clearToken, requireAuth };

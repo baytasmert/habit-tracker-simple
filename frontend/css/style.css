@@ -236,3 +236,65 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
   padding: 16px;
   font-size: 14px;
 }
+
+/* ── Photo section (LocalStack S3) ───── */
+.photo-section {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.upload-label {
+  background: var(--bg);
+  color: var(--text);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.upload-label:hover { background: #e5e7eb; }
+
+.btn-secondary {
+  width: auto;
+  padding: 6px 12px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  font-size: 12px;
+}
+
+.btn-secondary:hover { background: #e5e7eb; }
+
+.photo-status {
+  font-size: 12px;
+  padding: 4px 0;
+  width: 100%;
+}
+
+.photo-status.success { color: var(--success); }
+.photo-status.error { color: var(--danger); }
+.photo-status.uploading { color: var(--muted); font-style: italic; }
+
+.photo-list {
+  list-style: none;
+  margin: 6px 0;
+  padding: 8px 12px;
+  background: var(--bg);
+  border-radius: 6px;
+  font-size: 12px;
+  width: 100%;
+}
+
+.photo-list li { padding: 2px 0; color: var(--text); }
+.photo-list .empty { color: var(--muted); font-style: italic; }
+.photo-list .error { color: var(--danger); }

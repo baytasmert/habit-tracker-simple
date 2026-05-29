@@ -14,5 +14,4 @@ addopts = [
 [tool.coverage.run]
 omit = [
     "src/__init__.py",
-    "src/s3_client.py",
 ]

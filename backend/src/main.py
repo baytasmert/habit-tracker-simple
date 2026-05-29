@@ -200,6 +200,15 @@ def get_streak(
 
 
 # ── S3 (LocalStack) — habit progress photo ──────────────────────
+def _get_habit_for_user(db: Session, habit_id: int, user_id: int) -> models.Habit:
+    habit = db.query(models.Habit).filter(
+        models.Habit.id == habit_id, models.Habit.user_id == user_id
+    ).first()
+    if not habit:
+        raise HTTPException(status_code=404, detail="Habit not found")
+    return habit
+
+
 @app.post("/habits/{habit_id}/photo", status_code=201)
 def upload_habit_photo(
     habit_id: int,
@@ -207,13 +216,19 @@ def upload_habit_photo(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    habit = db.query(models.Habit).filter(
-        models.Habit.id == habit_id, models.Habit.user_id == user.id
-    ).first()
-    if not habit:
-        raise HTTPException(status_code=404, detail="Habit not found")
-
+    _get_habit_for_user(db, habit_id, user.id)
     body = file.file.read()
     key = f"habits/{habit_id}/{file.filename}"
     url = s3_client.upload_photo(key, body, file.content_type or "image/jpeg")
     return {"key": key, "url": url, "size_bytes": len(body)}
+
+
+@app.get("/habits/{habit_id}/photos")
+def list_habit_photos(
+    habit_id: int,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _get_habit_for_user(db, habit_id, user.id)
+    keys = s3_client.list_photos(prefix=f"habits/{habit_id}/")
+    return {"habit_id": habit_id, "count": len(keys), "keys": keys}
