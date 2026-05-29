@@ -1,3 +1,4 @@
-// API URL - production'da window.location.origin'a göre override edilebilir
-window.API_URL = window.API_URL || "http://localhost:8000";
+// API URL relative — frontend NGINX proxy'liyor (/api → backend:8000)
+// Hem lokal docker-compose'da hem Railway prod'da çalışır.
+window.API_URL = "/api";
 window.TOKEN_KEY = "habit_tracker_token";
