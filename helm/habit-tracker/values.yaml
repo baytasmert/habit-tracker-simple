@@ -11,7 +11,7 @@
 # ── Domain ────────────────────────────────────────────────────────
 # nip.io: domain gerektirmez — IP adresini tire ile yaz
 # Örnek: 104-249-8-24.nip.io
-domain: "104-249-8-24.nip.io"
+domain: "vivabit.digital"
 
 # ── Imajlar ────────────────────────────────────────────────────────
 backend:
