@@ -18,13 +18,18 @@ spec:
           image: postgres:16-alpine
           ports:
             - containerPort: 5432
+          # backend-config ConfigMap'inden user/password/db oku — backend
+          # ile aynı kaynaktan çekildiği için ikisi her zaman uyumlu olur.
           env:
-            - { name: POSTGRES_USER, value: user }
-            - { name: POSTGRES_PASSWORD, value: password }
-            - { name: POSTGRES_DB, value: habits }
+            - name: POSTGRES_USER
+              valueFrom: { configMapKeyRef: { name: backend-config, key: POSTGRES_USER } }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { configMapKeyRef: { name: backend-config, key: POSTGRES_PASSWORD } }
+            - name: POSTGRES_DB
+              valueFrom: { configMapKeyRef: { name: backend-config, key: POSTGRES_DB } }
           readinessProbe:
             exec:
-              command: ["pg_isready", "-U", "user", "-d", "habits"]
+              command: ["sh", "-c", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
             initialDelaySeconds: 5
             periodSeconds: 5
           resources:
