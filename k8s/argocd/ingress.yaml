@@ -1,0 +1,40 @@
+# ─────────────────────────────────────────────────────────────────
+# ArgoCD UI — argocd.vivabit.digital
+#
+# ArgoCD argocd namespace'inde, app Helm chart'ından ayrı. Bu ingress
+# de argocd namespace'inde olmalı (argocd-server service'ine işaret eder).
+# ArgoCD kendi login'ine sahip → BasicAuth gerekmez.
+#
+# Kurulum:
+#   1. DNS: argocd.vivabit.digital → 104.249.8.24 (A kaydı)
+#   2. kubectl apply -f k8s/argocd/ingress.yaml
+#
+# Not: ArgoCD --set server.insecure=true ile kuruldu → port 80 HTTP,
+#      TLS Traefik'te sonlanır.
+# ─────────────────────────────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: argocd-server-ingress
+  namespace: argocd
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - argocd.vivabit.digital
+      secretName: argocd-tls
+  rules:
+    - host: argocd.vivabit.digital
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: argocd-server
+                port:
+                  number: 80
