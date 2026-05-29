@@ -73,9 +73,15 @@
       </form>
     </section>
 
-    <!-- Liste -->
+    <!-- Bugün takip edilenler (özet) -->
+    <section id="today-section" hidden>
+      <h2 class="section-title">✅ Bugün Takip Edilenler <span id="today-count" class="count-pill">0</span></h2>
+      <div id="today-summary" class="today-summary"></div>
+    </section>
+
+    <!-- Tüm alışkanlıklar -->
     <section>
-      <h2 class="section-title">Alışkanlıklarım</h2>
+      <h2 class="section-title">📋 Tüm Alışkanlıklar <span id="all-count" class="count-pill">0</span></h2>
       <div id="habits-list" class="habits-list">
         <p class="loading">Yükleniyor...</p>
       </div>
@@ -85,13 +91,23 @@
 
   <!-- Check-in Modal -->
   <div id="checkin-modal" class="modal-overlay" hidden>
-    <div class="modal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
       <div class="modal-header">
-        <h3>✓ Bugünü Tamamla</h3>
-        <button class="modal-close" id="modal-close">×</button>
+        <h3 id="modal-title">✓ Bugünü Tamamla</h3>
+        <button class="modal-close" id="modal-close" aria-label="Kapat">×</button>
       </div>
       <p class="modal-sub" id="modal-sub"></p>
       <form id="checkin-form">
+        <div class="mood-block">
+          <span class="mood-label">Bugün nasıl hissettin? <span class="optional">(mod)</span></span>
+          <div class="mood-picker" id="mood-picker" role="radiogroup" aria-label="Mod seç">
+            <button type="button" class="mood-btn" data-mood="😣" title="Çok zor">😣</button>
+            <button type="button" class="mood-btn" data-mood="😕" title="Zorlandım">😕</button>
+            <button type="button" class="mood-btn" data-mood="😐" title="Normal">😐</button>
+            <button type="button" class="mood-btn" data-mood="🙂" title="İyi">🙂</button>
+            <button type="button" class="mood-btn" data-mood="😄" title="Harika">😄</button>
+          </div>
+        </div>
         <label>
           Nasıl geçti? <span class="optional">(not)</span>
           <textarea id="checkin-note" rows="3" placeholder="Bugünle ilgili bir not bırak..."></textarea>

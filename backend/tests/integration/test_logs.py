@@ -64,3 +64,30 @@ def test_delete_habit(client, auth_headers):
 def test_delete_unknown_habit_404(client, auth_headers):
     r = client.delete("/habits/999", headers=auth_headers)
     assert r.status_code == 404
+
+
+def test_track_saves_mood(client, auth_headers):
+    """Track mood emojisini kaydeder ve logs'ta döner."""
+    habit = _make_habit(client, auth_headers, name="Meditasyon")
+    today = date.today().isoformat()
+    r = client.post(f"/habits/{habit['id']}/track",
+                    json={"done": True, "log_date": today, "mood": "😄", "notes": "harika"},
+                    headers=auth_headers)
+    assert r.status_code == 201
+    assert r.json()["mood"] == "😄"
+
+    logs = client.get(f"/habits/{habit['id']}/logs", headers=auth_headers).json()
+    assert logs[0]["mood"] == "😄"
+
+
+def test_untrack_keeps_log_but_not_done(client, auth_headers):
+    """done=false ile geri alınca kayıt kalır ama done=false olur."""
+    habit = _make_habit(client, auth_headers, name="Koşu")
+    today = date.today().isoformat()
+    client.post(f"/habits/{habit['id']}/track",
+                json={"done": True, "log_date": today}, headers=auth_headers)
+    client.post(f"/habits/{habit['id']}/track",
+                json={"done": False, "log_date": today}, headers=auth_headers)
+    logs = client.get(f"/habits/{habit['id']}/logs", headers=auth_headers).json()
+    assert len(logs) == 1
+    assert logs[0]["done"] is False

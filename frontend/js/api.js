@@ -83,8 +83,8 @@ window.api = {
   listHabits: () => apiCall("/habits"),
   createHabit: (data) => apiCall("/habits", { method: "POST", body: data }),
   deleteHabit: (id) => apiCall(`/habits/${id}`, { method: "DELETE" }),
-  trackHabit: (id, { done = true, notes = null, log_date = null } = {}) =>
-    apiCall(`/habits/${id}/track`, { method: "POST", body: { done, notes, log_date } }),
+  trackHabit: (id, { done = true, notes = null, mood = null, log_date = null } = {}) =>
+    apiCall(`/habits/${id}/track`, { method: "POST", body: { done, notes, mood, log_date } }),
   getStreak: (id) => apiCall(`/habits/${id}/streak`),
   getLogs: (id) => apiCall(`/habits/${id}/logs`),
   uploadPhoto: (id, file, logDate = null) =>

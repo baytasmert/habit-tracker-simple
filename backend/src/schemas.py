@@ -52,6 +52,7 @@ class HabitLogCreate(BaseModel):
     done: bool = True
     log_date: Optional[date] = None
     notes: Optional[str] = None
+    mood: Optional[str] = None
 
 
 class HabitLogOut(BaseModel):
@@ -61,6 +62,7 @@ class HabitLogOut(BaseModel):
     log_date: date
     done: bool
     notes: Optional[str]
+    mood: Optional[str] = None
     photo_key: Optional[str] = None
 
 

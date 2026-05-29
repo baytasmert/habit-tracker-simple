@@ -34,6 +34,9 @@ def _ensure_schema():
             conn.execute(text(
                 "ALTER TABLE habit_logs ADD COLUMN IF NOT EXISTS photo_key VARCHAR"
             ))
+            conn.execute(text(
+                "ALTER TABLE habit_logs ADD COLUMN IF NOT EXISTS mood VARCHAR"
+            ))
     except Exception:
         pass
 
@@ -174,6 +177,8 @@ def track_habit(
     if existing:
         existing.done = payload.done
         existing.notes = payload.notes
+        if payload.mood is not None:
+            existing.mood = payload.mood
         db.commit()
         db.refresh(existing)
         return existing
@@ -183,6 +188,7 @@ def track_habit(
         log_date=log_date,
         done=payload.done,
         notes=payload.notes,
+        mood=payload.mood,
     )
     db.add(log)
     db.commit()

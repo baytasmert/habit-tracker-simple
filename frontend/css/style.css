@@ -521,10 +521,118 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 }
 .btn-ghost-sm:hover { background: var(--bg); }
 
+/* ── Mood picker (modal) ──────────────── */
+.mood-block { display: flex; flex-direction: column; gap: 8px; }
+.mood-label { font-size: 13px; font-weight: 500; color: var(--text); }
+.mood-picker { display: flex; gap: 8px; }
+.mood-btn {
+  width: auto;
+  flex: 1;
+  padding: 8px 0;
+  font-size: 24px;
+  background: var(--bg);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.12s;
+  filter: grayscale(0.4);
+  opacity: 0.7;
+}
+.mood-btn:hover { transform: scale(1.08); filter: none; opacity: 1; }
+.mood-btn.selected {
+  border-color: var(--primary);
+  background: rgba(79,70,229,0.08);
+  filter: none;
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+/* ── Count pill (bölüm başlıkları) ────── */
+.count-pill {
+  display: inline-block;
+  background: var(--primary);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 1px 9px;
+  border-radius: 999px;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
+/* ── Bugün takip edilenler (özet) ─────── */
+.today-summary { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 4px; }
+.today-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+  border: 1px solid #a7f3d0;
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 14px;
+}
+.chip-mood { font-size: 18px; }
+.chip-name { font-weight: 600; color: #065f46; }
+.chip-streak { font-size: 12px; color: #047857; font-weight: 700; }
+
+/* ── Tamamlanan habit kartı vurgusu ───── */
+.habit-item.is-done { border-color: #a7f3d0; background: #f7fefb; }
+.title-mood { font-size: 18px; }
+
+/* ── Haftalık ilerleme çubuğu ─────────── */
+.progress-row { display: flex; align-items: center; gap: 10px; margin: 14px 0 4px; }
+.progress-track {
+  flex: 1;
+  height: 8px;
+  background: var(--bg);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4f46e5, #16a34a);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+.progress-text { font-size: 12px; color: var(--muted); white-space: nowrap; font-weight: 600; }
+
+/* ── Motivasyon satırı ────────────────── */
+.motivation {
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg);
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin: 6px 0 0;
+}
+
+/* ── Streak 0 (sönük) ─────────────────── */
+.streak-num.zero { color: var(--border); }
+
+/* ── Geçmiş mood ──────────────────────── */
+.log-mood { font-size: 16px; }
+
+/* ── Konfeti ──────────────────────────── */
+.confetti {
+  position: fixed;
+  top: -12px;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  z-index: 999;
+  pointer-events: none;
+  animation: confetti-fall 1.4s ease-in forwards;
+}
+@keyframes confetti-fall {
+  to { transform: translateY(105vh) rotate(540deg); opacity: 0; }
+}
+
 @media (max-width: 600px) {
   .form-row { grid-template-columns: 1fr; }
   .stats-row { gap: 8px; }
   .stat-value { font-size: 26px; }
+  .mood-btn { font-size: 20px; }
 }
 
 /* ── Welcome / Landing page ─────────────── */
