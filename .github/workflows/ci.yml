@@ -8,7 +8,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: ${{ github.repository }}
 
 jobs:
 
@@ -24,7 +23,7 @@ jobs:
         working-directory: backend
         run: flake8 src tests --max-line-length=120
 
-  # ── 2. Test (pytest + coverage) ───────────────────────────────
+  # ── 2. Test (pytest + coverage + Testcontainers PostgreSQL) ──
   test:
     runs-on: ubuntu-latest
     needs: lint
@@ -34,16 +33,55 @@ jobs:
         with: { python-version: '3.11' }
       - name: Install dependencies
         working-directory: backend
-        run: |
-          pip install -r requirements.txt
-      - name: Run pytest with coverage (incl. Testcontainers)
+        run: pip install -r requirements.txt
+      - name: Run pytest (unit + integration + Testcontainers)
         working-directory: backend
+        env:
+          ENABLE_TRACING: "false"   # CI'da tracing kapalı
         run: pytest
 
-  # ── 3. Build & Push (GHCR) ────────────────────────────────────
-  build:
+  # ── 3. Newman (Postman API tests against running backend) ────
+  newman:
     runs-on: ubuntu-latest
     needs: test
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: habituser
+          POSTGRES_PASSWORD: habitpass
+          POSTGRES_DB: habits
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U habituser -d habits"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: npm install -g newman
+      - name: Install backend
+        working-directory: backend
+        run: pip install -r requirements.txt
+      - name: Start backend in background
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://habituser:habitpass@localhost:5432/habits
+          SECRET_KEY: ci-secret
+          ENABLE_TRACING: "false"
+          AWS_ENDPOINT_URL: http://localhost:4566
+        run: |
+          nohup uvicorn src.main:app --host 0.0.0.0 --port 8000 > backend.log 2>&1 &
+          for i in {1..20}; do curl -fsS http://localhost:8000/health && break; sleep 2; done
+      - name: Run Newman against running API
+        run: newman run postman/collection.json --env-var "base_url=http://localhost:8000"
+
+  # ── 4. Build & Push (GHCR) ────────────────────────────────────
+  build:
+    runs-on: ubuntu-latest
+    needs: [test, newman]
     permissions:
       contents: read
       packages: write
@@ -63,10 +101,8 @@ jobs:
         run: |
           BACKEND="${{ env.REGISTRY }}/${{ github.repository }}/backend"
           FRONTEND="${{ env.REGISTRY }}/${{ github.repository }}/frontend"
-          BACKEND_LOWER=$(echo "$BACKEND" | tr '[:upper:]' '[:lower:]')
-          FRONTEND_LOWER=$(echo "$FRONTEND" | tr '[:upper:]' '[:lower:]')
-          echo "backend=$BACKEND_LOWER" >> $GITHUB_OUTPUT
-          echo "frontend=$FRONTEND_LOWER" >> $GITHUB_OUTPUT
+          echo "backend=$(echo $BACKEND | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+          echo "frontend=$(echo $FRONTEND | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
       - name: Build & push backend
         uses: docker/build-push-action@v5
         with:
@@ -84,7 +120,7 @@ jobs:
             ${{ steps.tags.outputs.frontend }}:${{ github.sha }}
             ${{ steps.tags.outputs.frontend }}:latest
 
-  # ── 4. Deploy to Kind (K8s) + smoke ──────────────────────────
+  # ── 5. Deploy to Kind + smoke test ────────────────────────────
   deploy-smoke:
     runs-on: ubuntu-latest
     needs: build
@@ -118,26 +154,38 @@ jobs:
           for f in k8s/*.yaml; do
             sed "s|__BACKEND_IMAGE__|$BACKEND_IMAGE|g; s|__FRONTEND_IMAGE__|$FRONTEND_IMAGE|g" "$f" > "rendered/$(basename $f)"
           done
-      - name: Apply manifests
+      - name: Apply infra manifests (db, S3, tracing, monitoring)
         run: |
           kubectl apply -f rendered/configmap.yaml
           kubectl apply -f rendered/postgres.yaml
+          kubectl apply -f rendered/localstack.yaml
+          kubectl apply -f rendered/jaeger.yaml
+          kubectl apply -f rendered/prometheus.yaml
+          kubectl apply -f rendered/grafana.yaml
           kubectl rollout status deployment/postgres --timeout=2m
+          kubectl rollout status deployment/localstack --timeout=2m
+          kubectl rollout status deployment/jaeger --timeout=2m
+      - name: Apply application manifests
+        run: |
           kubectl apply -f rendered/backend.yaml
           kubectl apply -f rendered/frontend.yaml
           kubectl rollout status deployment/backend --timeout=3m
           kubectl rollout status deployment/frontend --timeout=2m
-      - name: Smoke test (port-forward + curl)
+      - name: Smoke test (port-forward + curl /health + /metrics)
         run: |
           kubectl port-forward svc/backend 8000:8000 &
-          PF_PID=$!
           sleep 5
           curl --fail --retry 10 --retry-delay 3 http://localhost:8000/health
-          curl --fail http://localhost:8000/metrics | head -20
-          kill $PF_PID || true
+          curl --fail http://localhost:8000/metrics | grep http_requests_total
+      - name: k6 smoke against deployed cluster
+        uses: grafana/setup-k6-action@v1
+      - name: Run k6 smoke
+        run: k6 run -e BASE_URL=http://localhost:8000 perf/smoke-test.js
       - name: Debug on failure
         if: failure()
         run: |
           kubectl get pods -A
           kubectl describe pods
-          kubectl logs deployment/backend --tail=100 || true
+          kubectl logs deployment/backend --tail=200 || true
+          kubectl logs deployment/jaeger --tail=50 || true
+          kubectl logs deployment/localstack --tail=50 || true
