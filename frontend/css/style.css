@@ -413,7 +413,11 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 .log-photo:hover { background: var(--bg); }
 .log-photo-img {
   display: block;
-  max-width: 220px;
+  max-width: 140px;
+  max-height: 180px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
   border-radius: 8px;
   margin-top: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.12);
