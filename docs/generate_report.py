@@ -212,7 +212,7 @@ story.append(B('Latency p95/p99: <code>histogram_quantile</code> ile hesaplanir'
 if os.path.exists('docs/grafana-dashboard.png'):
     try:
         story.append(Spacer(1, 4))
-        story.append(Image('docs/grafana-dashboard.png', width=15 * cm, height=7.5 * cm))
+        story.append(Image('docs/grafana-dashboard.png', width=15 * cm, height=7.09 * cm))
     except Exception:
         story.append(P('[Grafana dashboard: grafana.vivabit.digital]'))
 else:
