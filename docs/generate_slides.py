@@ -102,18 +102,18 @@ if os.path.exists("docs/architecture.png"):
 story.append(PageBreak())
 
 # ── 3. Test Stratejisi ────────────────────────────────────────
-slide(story, "3 · Test Stratejisi", "Test piramidi — 42+ otomatik test", [
+slide(story, "3 · Test Stratejisi", "Test piramidi — 40 birim+entegrasyon, 58 toplam", [
     tbl([
         ["Katman", "Araç", "Adet"],
         ["Unit", "pytest", "8"],
-        ["Integration", "pytest + TestClient", "22"],
-        ["Testcontainers", "gerçek PostgreSQL 16", "6"],
+        ["Integration", "pytest + TestClient", "32"],
+        ["Testcontainers", "gerçek PostgreSQL 16", "3"],
         ["E2E", "Playwright", "6"],
         ["API", "Postman / Newman", "7"],
         ["Performans", "k6 (smoke + load)", "2"],
     ], [6, 9, 3]),
     Spacer(1, 14),
-    B("Coverage hedefi <b>%70</b> → ulaşılan: <b>%88</b>"),
+    B("Coverage hedefi <b>%70</b> → ulaşılan: <b>%86</b> (CI gate: --cov-fail-under=70)"),
     B("Factory Boy + Faker ile izole, gerçekçi test verisi"),
 ])
 
@@ -141,8 +141,8 @@ slide(story, "5 · Monitoring & Observability", "Prometheus + Grafana + Jaeger",
 slide(story, "6 · Sayılar", "", [
     tbl([
         ["Ölçüt", "Değer"],
-        ["Toplam test", "42+ (unit + integration + TC + E2E + Newman + k6)"],
-        ["Coverage", "%88 (hedef %70)"],
+        ["Toplam test", "40 birim+entegrasyon + 3 TC + 6 E2E + 7 Newman + 2 k6"],
+        ["Coverage", "%86 (hedef %70)"],
         ["p95 latency (k6 load)", "~285 ms (eşik < 500 ms)"],
         ["Docker image", "Multi-stage backend + NGINX frontend"],
         ["K8s servis sayısı", "7 (postgres, backend, frontend, localstack, jaeger, prom, grafana)"],

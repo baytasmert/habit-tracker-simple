@@ -2,7 +2,7 @@
 
 **Marmara Üniversitesi — Bulut Mimarilerinde Test Mühendisliği — Dönem Projesi**
 
-Günlük alışkanlık takibi yapan minimal bir REST API. Şartnamenin **tüm** gereksinimlerini + **2 bonus (Jaeger +5, ArgoCD +5)** karşılar. Abartı yok, savunulması kolay.
+Günlük alışkanlık takibi yapan minimal bir REST API. Şartnamenin **tüm** gereksinimlerini + **3 bonus (Helm +5, OpenTelemetry/Jaeger +5, ArgoCD +5 = bonus tavanı)** karşılar. Abartı yok, savunulması kolay.
 
 > Bu proje, aynı yazarın `habit-tracker-api` reposunun **lightweight** versiyonudur.
 
@@ -101,33 +101,48 @@ docker-compose up -d --build
 |---|---|---|---|---|
 | 1 | POST | `/register` | – | Yeni kullanıcı |
 | 2 | POST | `/login` | – | JWT token |
-| 3 | POST | `/habits` | ✓ | Habit oluştur |
+| 3 | POST | `/habits` | ✓ | Habit oluştur (kategori + haftalık hedef) |
 | 4 | GET | `/habits` | ✓ | Habit listesi |
-| 5 | POST | `/habits/{id}/track` | ✓ | Bugün yap (UPSERT) |
-| 6 | GET | `/habits/{id}/streak` | ✓ | Mevcut seri |
-| 7 | POST | `/habits/{id}/photo` | ✓ | S3'e fotoğraf yükle |
-| 8 | GET | `/habits/{id}/photos` | ✓ | S3'teki fotoğrafları listele |
+| 5 | POST | `/habits/{id}/track` | ✓ | Bugün yap/geri al (UPSERT + mood + notes) |
+| 6 | GET | `/habits/{id}/logs` | ✓ | Günlük kayıt geçmişi (mood dahil) |
+| 7 | DELETE | `/habits/{id}` | ✓ | Alışkanlık sil |
+| 8 | GET | `/habits/{id}/streak` | ✓ | Mevcut seri + toplam tamamlama |
+| 9 | POST | `/habits/{id}/photo` | ✓ | S3'e fotoğraf yükle |
+| 10 | GET | `/habits/{id}/photos` | ✓ | S3'teki fotoğrafları listele |
+| 11 | GET | `/habits/{id}/photo-file` | ✓ | S3'ten fotoğrafı stream et (UI thumbnail) |
 | – | GET | `/health` | – | Sağlık |
 | – | GET | `/metrics` | – | Prometheus |
 | – | GET | `/docs` | – | Swagger UI |
+
+> **Mood tracking:** `/track` çağrısında `mood` alanı (5 seviyeli emoji: 😣😕😐🙂😄) opsiyonel olarak gönderilir, geçmişte ve bugün özetinde gösterilir. `done=false` ile aynı endpoint tamamlamayı geri alır (toggle).
 
 ---
 
 ## 🎨 Frontend UI
 
-Dashboard'da her habit için sunulan etkileşimler:
+Dashboard **iki bölümden** oluşur:
 
-- **"Bugün Yaptım"** — tracking ekler, streak'i günceller
+- **Bugün Takip Edilenler** — bugün tamamlanan habitler özet chip'leri (mood emoji + streak ile)
+- **Tüm Alışkanlıklar** — yapılmayanlar üstte sıralı; her kart için detaylı etkileşim
+
+Her habit kartında sunulan etkileşimler:
+
+- **"Bugün Yaptım" / geri al** — `POST /habits/{id}/track` ile tracking toggle (tekrar tıklayınca `done=false`)
+- **Mood seçici** — modal'da 5 emoji (😣😕😐🙂😄), günlük ruh hali kayda geçer
+- **Haftalık ilerleme çubuğu** — X/hedef gün (%), `goal_days_per_week` baz alınır
+- **Motivasyon mesajı** — streak'e göre dinamik metin
+- **🏆 En uzun seri** (gerçek longest-ever) + **✅ toplam tamamlama** rozetleri
+- **🎉 Konfeti** — habit tamamlanınca
 - **"📸 Fotoğraf Yükle"** — file picker → `POST /habits/{id}/photo` (LocalStack S3)
-- **"Fotoğrafları Listele"** — `GET /habits/{id}/photos` ile S3'teki tüm key'leri çeker
+- **"Fotoğrafları Listele"** — `GET /habits/{id}/photos` + `GET /habits/{id}/photo-file` ile thumbnail
 
-Yani LocalStack'in upload+list özellikleri direkt kullanıcı arayüzünde.
+A11y: modal `role=dialog`, ESC ile kapanma, focus yönetimi, blob URL revoke (bellek sızıntısı yok). LocalStack'in upload+list özellikleri direkt kullanıcı arayüzünde.
 
 ---
 
 ## ✅ Testler
 
-### Unit + Integration (pytest, %88+ coverage)
+### Unit + Integration (pytest, ~%86 coverage)
 
 ```bash
 cd backend
@@ -136,7 +151,7 @@ pip install -r requirements.txt
 pytest tests/unit tests/integration
 ```
 
-**30 test, coverage %88+**.
+**40 test, coverage ~%86** (mood + untrack senaryoları dahil; CI gate %70).
 
 ### Testcontainers (gerçek PostgreSQL)
 
@@ -146,7 +161,7 @@ pytest tests/test_testcontainers.py
 
 > Windows'ta psycopg2 hostname encoding sorunu nedeniyle otomatik skip. Linux/CI'da çalışır.
 
-### E2E (Playwright — 5 senaryo)
+### E2E (Playwright — 6 senaryo)
 
 ```bash
 docker-compose up -d
@@ -172,7 +187,9 @@ k6 run -e BASE_URL=http://localhost:8000 perf/load-test.js
 
 ---
 
-## ☸️ Kubernetes (Kind)
+## ☸️ Kubernetes — Helm chart (+5 bonus)
+
+Tüm K8s kaynakları **tek bir Helm chart** olarak paketlendi ([helm/habit-tracker/](helm/habit-tracker/)). 7 servisin Deployment + Service + ConfigMap'i bu chart'ın template'lerinden render edilir; imaj tag'leri, domain, replica sayısı vb. `values.yaml`'dan yönetilir.
 
 ```bash
 kind create cluster --name habit-tracker
@@ -183,22 +200,16 @@ docker build -t frontend:dev ./frontend
 kind load docker-image backend:dev --name habit-tracker
 kind load docker-image frontend:dev --name habit-tracker
 
-# Image placeholder replace
-sed -i 's|__BACKEND_IMAGE__|backend:dev|g; s|__FRONTEND_IMAGE__|frontend:dev|g' k8s/*.yaml
+# Helm ile render + apply (ingress kapalı — lokal port-forward kullanılır)
+helm template habit-tracker helm/habit-tracker \
+  --set backend.image.repository=backend --set backend.image.tag=dev \
+  --set frontend.image.repository=frontend --set frontend.image.tag=dev \
+  --set ingress.enabled=false \
+  | kubectl apply -f -
 
-# Infra apply (sırayla)
-kubectl apply -f k8s/configmap.yaml
-kubectl apply -f k8s/postgres.yaml
-kubectl apply -f k8s/localstack.yaml
-kubectl apply -f k8s/jaeger.yaml
-kubectl apply -f k8s/prometheus.yaml
-kubectl apply -f k8s/grafana.yaml
 kubectl rollout status deployment/postgres --timeout=2m
-
-# App apply
-kubectl apply -f k8s/backend.yaml
-kubectl apply -f k8s/frontend.yaml
-kubectl rollout status deployment/backend --timeout=3m
+kubectl rollout status deployment/backend  --timeout=3m
+kubectl rollout status deployment/frontend --timeout=2m
 
 # Erişim
 kubectl port-forward svc/frontend 8080:80 &
@@ -210,17 +221,19 @@ kubectl port-forward svc/grafana 3000:3000 &
 kind delete cluster --name habit-tracker
 ```
 
+> CI (`deploy-smoke`) de aynı `helm template … | kubectl apply -f -` yöntemini kullanır — yani lokal ile pipeline birebir aynı manifestleri uygular.
+
 **K8s'de çalışan 7 servis**: postgres, backend, frontend, localstack, jaeger, prometheus, grafana.
 
-### ArgoCD GitOps (+5 bonus)
+### Production: k3s + Helm + ArgoCD GitOps (+5 bonus)
 
-Kurulum + sync için bkz. [k8s/argocd/README.md](k8s/argocd/README.md). Her `git push origin main` → otomatik deploy.
+VPS'teki k3s cluster'ı bu chart'ı Helm ile çalıştırır; ingress açık (Traefik + Let's Encrypt). Her `git push origin main` → CI imaj build eder + `values.yaml` tag'ini bump'lar → **ArgoCD** commit'i görüp otomatik sync eder. Kurulum + sync için bkz. [k8s/argocd/README.md](k8s/argocd/README.md).
 
 ---
 
 ## 🔄 CI/CD Pipeline
 
-`.github/workflows/ci.yml` — **5 job zincirli**:
+`.github/workflows/ci.yml` — **6 job zincirli**:
 
 ```
 push/PR → main
@@ -229,10 +242,11 @@ push/PR → main
    ├── test           pytest + coverage 70%+ + Testcontainers
    ├── newman         live API (Postgres service) + Postman collection
    ├── build          backend + frontend → GHCR (:sha, :latest)
-   └── deploy-smoke   Kind cluster + ALL infra + curl + k6 smoke
+   ├── deploy-smoke   Kind cluster + helm template apply + curl + k6 smoke
+   └── cd-bump        values.yaml image tag bump → commit (ArgoCD GitOps tetikler)
 ```
 
-**`deploy-smoke` ayağa kaldırdığı servisler**: postgres, localstack, jaeger, prometheus, grafana, backend, frontend (7 servis).
+**`deploy-smoke` ayağa kaldırdığı servisler**: postgres, localstack, jaeger, prometheus, grafana, backend, frontend (7 servis) — `helm template … | kubectl apply -f -` ile.
 
 ---
 
@@ -243,15 +257,15 @@ habit-tracker-simple/
 ├── .env.example            # Tek kaynak config (docker-compose env_file)
 ├── backend/                # FastAPI REST API
 │   ├── src/
-│   │   ├── main.py         # 8 endpoint
-│   │   ├── models.py       # User, Habit, HabitLog
+│   │   ├── main.py         # 11 endpoint (+ track mood/untrack, logs, delete)
+│   │   ├── models.py       # User, Habit, HabitLog (mood kolonu)
 │   │   ├── schemas.py      # Pydantic
 │   │   ├── auth.py         # JWT + bcrypt
 │   │   ├── s3_client.py    # LocalStack boto3
 │   │   ├── tracing.py      # OpenTelemetry → Jaeger
 │   │   ├── config.py       # pydantic-settings
 │   │   └── database.py
-│   ├── tests/              # 30 unit+integration + 3 testcontainers
+│   ├── tests/              # 40 unit+integration + 3 testcontainers
 │   ├── Dockerfile          # Multi-stage
 │   └── requirements.txt
 ├── frontend/               # Static + NGINX
@@ -260,18 +274,19 @@ habit-tracker-simple/
 │   ├── js/                 # config, api, login, register, dashboard
 │   ├── Dockerfile          # NGINX
 │   └── nginx.conf
-├── tests/e2e/              # Playwright 5 senaryo
-├── k8s/                    # 7 servis manifesti
-│   ├── configmap.yaml
-│   ├── postgres.yaml
-│   ├── backend.yaml
-│   ├── frontend.yaml
-│   ├── localstack.yaml
-│   ├── jaeger.yaml         # +5 bonus
-│   ├── prometheus.yaml
-│   ├── grafana.yaml
+├── tests/e2e/              # Playwright 6 senaryo
+├── helm/habit-tracker/     # +5 bonus — 7 servisi paketleyen Helm chart
+│   ├── Chart.yaml
+│   ├── values.yaml         # domain, imaj tag, replica, kaynak limitleri
+│   ├── dashboards/         # Grafana dashboard JSON
+│   └── templates/          # backend/frontend/postgres/localstack/
+│       │                   #   jaeger/prometheus/grafana + configmap + ingress
+│       └── _helpers.tpl
+├── k8s/                    # cluster-seviyesi ek kaynaklar
+│   ├── cert-issuer.yaml    # Let's Encrypt ClusterIssuer
 │   └── argocd/             # +5 bonus GitOps
 │       ├── application.yaml
+│       ├── ingress.yaml
 │       └── README.md
 ├── perf/                   # k6 smoke + load
 ├── postman/                # Newman collection
@@ -288,24 +303,25 @@ habit-tracker-simple/
 
 | Gereksinim | Durum | Detay |
 |---|:-:|---|
-| Mini Servis (4-6 endpoint) | ✅ | 6 ana + 2 S3 + 3 utility = 11 endpoint |
-| Pytest unit+integration ≥%70 | ✅ | **30 test, %88 coverage** |
+| Mini Servis (4-6 endpoint) | ✅ | 8 habit/auth + 3 S3 + 3 utility = 14 endpoint |
+| Pytest unit+integration ≥%70 | ✅ | **40 test, %86 coverage** (CI gate: `--cov-fail-under=70`) |
 | Postman/Newman CI | ✅ | 7 istek + test assertions, CI'da koşar |
 | Docker multi-stage | ✅ | backend (builder+runtime) + frontend (NGINX) |
 | LocalStack S3 (Community Edition) | ✅ | Habit photo upload+list, UI'da görünür |
 | Testcontainers ≥2 test | ✅ | 3 test (gerçek PostgreSQL 16) |
 | Factory Boy + Faker | ✅ | UserFactory, HabitFactory, HabitLogFactory |
-| Kubernetes (Kind) | ✅ | 7 servis manifesti |
-| GitHub Actions | ✅ | lint → test → newman → build → deploy-smoke |
+| Kubernetes (Kind/k3s) | ✅ | Helm chart → 7 servis (Deployment + Service + ConfigMap) |
+| GitHub Actions | ✅ | lint → test → newman → build → deploy-smoke → cd-bump |
 | Prometheus + Grafana ≥3 panel | ✅ | Request rate, error rate, p95/p99 latency |
 | k6 + p95 ölçüm | ✅ | p(95)=~285ms |
-| E2E 3-5 senaryo | ✅ | 5 Playwright testi |
-| docs/architecture.png | ✅ | matplotlib generate |
-| docs/final-report.pdf | ✅ | 5 sayfa IEEE formatı |
+| E2E 3-5 senaryo | ✅ | 6 Playwright testi |
+| docs/architecture.png | ✅ | Mermaid + PNG export |
+| docs/final-report.pdf | ✅ | 6 sayfa, 11pt/1.15 tek sütun, ders şartname formatı |
+| **Bonus +5: Helm chart** | ✅ | `helm/habit-tracker/` — 7 servisi tek chart'ta paketler |
 | **Bonus +5: OpenTelemetry** | ✅ | FastAPI+SQLAlchemy auto-instrument → Jaeger OTLP |
 | **Bonus +5: ArgoCD GitOps** | ✅ | `k8s/argocd/application.yaml` — automated sync |
 
-**Beklenen puan**: 100 + 10 bonus = **110/100**
+**Beklenen puan**: 100 + 15 bonus (Helm + OpenTelemetry + ArgoCD, bonus tavanı) = **115/100**
 
 ---
 
