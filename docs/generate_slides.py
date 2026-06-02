@@ -131,6 +131,23 @@ def B(t):
     return Paragraph(f'<font color="#4f46e5"><b>•</b></font>&nbsp;&nbsp;{t}', bullet)
 
 
+sub_bullet = ParagraphStyle("sb", fontName=FONT, fontSize=12.5, leading=19,
+                            textColor=MUTED, leftIndent=24)
+
+
+def SB(t):
+    return Paragraph(f'<font color="#9ca3af">–</font>&nbsp;&nbsp;{t}', sub_bullet)
+
+
+def col2(left, right, lw, rw):
+    """İki sütun: sol (tek flowable) + sağ (flowable listesi)."""
+    t = Table([[left, right]], colWidths=[lw * cm, rw * cm])
+    t.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"),
+                           ("LEFTPADDING", (1, 0), (1, 0), 14),
+                           ("RIGHTPADDING", (0, 0), (0, 0), 0)]))
+    return t
+
+
 def slide(story, num, title, sub, body):
     story.append(band(num, title, sub))
     story.append(Spacer(1, 0.55 * cm))
@@ -191,27 +208,40 @@ story += [
 
 # ── 1. Problem & Çözüm ──────────────────────────────────────────────
 slide(story, 1, "Problem &amp; Çözüm", "Neden bir test &amp; dağıtım pipeline'ı?", [
-    B("<b>Konu:</b> Habit Tracker API — günlük alışkanlık takibi, streak ve mood"),
-    B("<b>Amaç:</b> Uygulamayı değil, etrafındaki <b>üretim kalitesinde test &amp; deploy altyapısını</b> kurmak"),
-    B("Frontend (NGINX) ve Backend (FastAPI) tamamen <b>ayrı mikroservisler</b>"),
-    B("Her katman otomatik test edilip <b>GitOps</b> ile canlıya çıkıyor"),
-    B("<b>Canlı:</b> https://vivabit.digital — gerçek bir VPS'te k3s cluster'ında"),
+    B("<b>Problem:</b> Modern yazılımda asıl zorluk kod değil; testi, dağıtımı ve "
+      "gözlemlenebilirliği <b>güvenilir + otomatik</b> hale getirmek"),
+    B("<b>Seçilen uygulama:</b> Habit Tracker API — günlük alışkanlık takibi, streak, "
+      "mood ve fotoğraf yükleme (S3)"),
+    SB("3 entity (User · Habit · HabitLog), 14 REST endpoint, JWT auth"),
+    B("<b>Çözüm:</b> Uygulamayı sade tutup etrafına <b>üretim kalitesinde</b> bir "
+      "test &amp; CI/CD &amp; monitoring iskeleti kurmak"),
+    SB("Frontend (NGINX, static) + Backend (FastAPI, JSON) tamamen ayrı mikroservis"),
+    SB("Her katman otomatik test → GitOps ile k3s cluster'a canlıya çıkıyor"),
+    B("<b>Sonuç:</b> Şartnamenin tüm katmanları + 3 bonus (Helm · OpenTelemetry · ArgoCD)"),
+    B("<b>Canlı:</b> https://vivabit.digital — gerçek bir VPS'te, HTTPS + Let's Encrypt"),
 ])
 
 # ── 2. Mimari ───────────────────────────────────────────────────────
-arch_body = []
-if os.path.exists("docs/architecture.png"):
-    _arch = Image("docs/architecture.png", width=11.6 * cm, height=13.8 * cm)
-    _arch.hAlign = "CENTER"
-    arch_body += [_arch,
-                  Spacer(1, 0.15 * cm),
-                  Paragraph("Browser → Traefik (HTTPS) → Frontend/Backend → Postgres · S3 · Jaeger · Prometheus · Grafana",
-                            caption)]
-else:
-    arch_body.append(B("docs/architecture.png bulunamadı"))
-story.append(band(2, "Mimari Diyagram", "Tüm bileşenler tek sayfada"))
+story.append(band(2, "Mimari", "Tüm bileşenler tek sayfada + akış"))
 story.append(Spacer(1, 0.3 * cm))
-story += arch_body
+arch_components = [
+    B("<b>Traefik Ingress:</b> tek giriş, HTTPS (Let's Encrypt), host bazlı routing, BasicAuth"),
+    B("<b>Frontend:</b> NGINX — static HTML/JS serve + <font face=\"Courier\">/api</font> reverse proxy (CORS yok)"),
+    B("<b>Backend:</b> FastAPI — JSON REST, JWT, Prometheus <font face=\"Courier\">/metrics</font>"),
+    B("<b>PostgreSQL:</b> User/Habit/HabitLog — kalıcı PVC"),
+    B("<b>LocalStack S3:</b> alışkanlık fotoğrafları (boto3)"),
+    B("<b>Jaeger:</b> OpenTelemetry OTLP ile distributed tracing"),
+    B("<b>Prometheus + Grafana:</b> metrik toplama + 5 panel"),
+    Spacer(1, 0.2 * cm),
+    Paragraph("<b>Akış:</b> Browser → Traefik → Frontend → <font face=\"Courier\">/api</font> → "
+              "Backend → Postgres · S3 · Jaeger", note),
+]
+if os.path.exists("docs/architecture.png"):
+    _arch = Image("docs/architecture.png", width=10.2 * cm, height=12.13 * cm)
+    _arch.hAlign = "CENTER"
+    story.append(col2(_arch, arch_components, 10.6, 15.4))
+else:
+    story += arch_components
 story.append(PageBreak())
 
 # ── 3. Test Stratejisi ──────────────────────────────────────────────
@@ -226,36 +256,48 @@ slide(story, 3, "Test Stratejisi", "Test piramidi — geniş taban, dar tepe", [
         ["Performans", "k6 (smoke + load)", "2", "p95 latency"],
     ], [4.2, 6.5, 2.3, 8.0]),
     Spacer(1, 0.45 * cm),
-    cards([
-        ("%86", "coverage (hedef %70)", "#10b981"),
-        ("58", "toplam otomatik test", "#4f46e5"),
-        ("6", "farklı test türü", "#8b5cf6"),
-    ], h=2.3),
+    B("<b>Piramit mantığı:</b> çok sayıda hızlı unit, orta katmanda integration, az sayıda yavaş E2E"),
+    B("<b>Coverage:</b> hedef %70 → ulaşılan <b>%86</b>; CI kapısı "
+      "<font face=\"Courier\">--cov-fail-under=70</font> ile zorunlu (düşerse pipeline kırmızı)"),
+    B("<b>Testcontainers:</b> gerçek PostgreSQL 16 container'ı → kalıcılık ve şema doğrulanır"),
+    B("<b>Factory Boy + Faker:</b> her test izole, gerçekçi ve benzersiz veri üretir"),
+    B("<b>58 otomatik test</b>, 6 farklı türde — hepsi CI'da her push'ta koşar"),
 ])
 
 # ── 4. CI/CD Pipeline ───────────────────────────────────────────────
 slide(story, 4, "CI/CD Pipeline", "GitHub Actions — 6 job, fail-fast zincir", [
     flow(["lint", "test", "newman", "build", "deploy-smoke", "cd-bump"]),
-    Spacer(1, 0.5 * cm),
-    B("<b>test:</b> pytest + coverage (CI kapısı %70) + Testcontainers"),
-    B("<b>build:</b> backend + frontend imajları → GHCR (:sha, :latest)"),
-    B("<b>deploy-smoke:</b> Kind cluster + Helm + curl /health + k6 (kalite kapısı)"),
-    B("<b>cd-bump:</b> Helm values.yaml image tag güncelle → commit"),
-    B("<b>ArgoCD</b> commit'i görür → k3s cluster'a otomatik sync — manuel kubectl yok"),
+    Spacer(1, 0.45 * cm),
+    B("<b>lint:</b> flake8 kod stili — en hızlı kapı, erken kırılır"),
+    B("<b>test:</b> pytest + coverage (kapı %70) + Testcontainers (gerçek Postgres)"),
+    B("<b>newman:</b> Postman koleksiyonu canlı API'ye (Postgres service) koşar"),
+    B("<b>build:</b> backend + frontend imajları → GHCR (<font face=\"Courier\">:sha</font>, <font face=\"Courier\">:latest</font>)"),
+    B("<b>deploy-smoke:</b> Kind cluster + <font face=\"Courier\">helm template | kubectl apply</font> + curl /health + k6"),
+    B("<b>cd-bump:</b> Helm values.yaml image tag'ini yeni SHA'ya günceller → commit"),
+    Spacer(1, 0.2 * cm),
+    B("<b>Deploy stratejisi (GitOps):</b> push → CI → tag bump → <b>ArgoCD</b> farkı görüp "
+      "k3s'e otomatik sync. Manuel kubectl yok; rollback = önceki revizyon / <font face=\"Courier\">:sha</font> imaj"),
 ])
 
 # ── 5. Monitoring & Observability ───────────────────────────────────
 mon_body = []
 if os.path.exists("docs/grafana-dashboard.png"):
-    _graf = Image("docs/grafana-dashboard.png", width=20 * cm, height=9.46 * cm)
+    _graf = Image("docs/grafana-dashboard.png", width=17.5 * cm, height=8.28 * cm)
     _graf.hAlign = "CENTER"
     mon_body += [_graf,
-                 Spacer(1, 0.12 * cm),
-                 Paragraph("Grafana — request rate · error rate · p95/p99 latency (canlı: grafana.vivabit.digital)",
-                           caption)]
-else:
-    mon_body += [B("<b>Grafana:</b> request rate · error rate · p95/p99 latency"),
-                 B("<b>Prometheus:</b> http_requests_total, request_duration histogram")]
+                 Spacer(1, 0.1 * cm),
+                 Paragraph("Grafana — 5 panel: request rate · error rate · p95/p99 latency · "
+                           "endpoint yük dağılımı · kullanıcı aktivitesi (canlı: grafana.vivabit.digital)",
+                           caption),
+                 Spacer(1, 0.3 * cm)]
+mon_body += [
+    B("<b>Prometheus:</b> <font face=\"Courier\">http_requests_total</font> (counter) + "
+      "<font face=\"Courier\">request_duration</font> (histogram → p95/p99)"),
+    B("<b>Jaeger (+5 bonus):</b> FastAPI + SQLAlchemy auto-instrument, OTLP ile distributed tracing"),
+    B("<b>İncelik:</b> Service yerine her pod ayrı scrape edilir — yoksa 2 replikanın "
+      "sayaçları karışıp <font face=\"Courier\">rate()</font> sahte spike üretir"),
+    B("Tüm paneller Traefik BasicAuth arkasında: grafana · jaeger · prometheus . vivabit.digital"),
+]
 story.append(band(5, "Monitoring &amp; Observability", "Prometheus + Grafana + Jaeger (OpenTelemetry)"))
 story.append(Spacer(1, 0.3 * cm))
 story += mon_body
@@ -263,18 +305,23 @@ story.append(PageBreak())
 
 # ── 6. Sayılar ──────────────────────────────────────────────────────
 story.append(band(6, "Sayılar", "Projeyi tek bakışta özetleyen metrikler"))
-story.append(Spacer(1, 0.7 * cm))
+story.append(Spacer(1, 0.55 * cm))
 story.append(cards([
     ("58", "otomatik test", "#4f46e5"),
     ("%86", "coverage", "#10b981"),
     ("~285ms", "p95 (yük testi)", "#f59e0b"),
-], h=3.3))
-story.append(Spacer(1, 0.6 * cm))
+], h=3.0))
+story.append(Spacer(1, 0.5 * cm))
 story.append(cards([
     ("7", "K8s servisi", "#3b82f6"),
     ("6", "CI job", "#8b5cf6"),
     ("+15", "bonus (Helm·OTel·ArgoCD)", "#ef4444"),
-], h=3.3))
+], h=3.0))
+story.append(Spacer(1, 0.55 * cm))
+story.append(B("<b>p95 yorumu:</b> 285 ms, 500 ms eşiğinin çok altında — en yavaş uçlar "
+                "<font face=\"Courier\">/register</font> ve <font face=\"Courier\">/login</font> "
+                "(bcrypt hashing, güvenlik gereği optimize edilmez)"))
+story.append(B("<b>Şartname:</b> 100/100 zorunlu + 15/15 bonus (tavan) → beklenen 115/100"))
 story.append(PageBreak())
 
 # ── 7. Öğrendiklerim & Zorluklar ────────────────────────────────────
