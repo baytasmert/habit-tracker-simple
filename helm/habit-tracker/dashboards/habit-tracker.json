@@ -74,6 +74,49 @@
           "unit": "s"
         }
       }
+    },
+    {
+      "id": 4,
+      "title": "Gerçek API Yükü — endpoint bazlı (probe /health + scrape /metrics hariç, son 1s)",
+      "type": "piechart",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "targets": [
+        {
+          "expr": "sum(increase(http_requests_total{endpoint!~\"/health|/metrics\"}[1h])) by (endpoint)",
+          "legendFormat": "{{endpoint}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "table", "placement": "right", "values": ["value", "percent"] },
+        "pieType": "donut",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+      },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "unit": "short" }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Kullanıcı Aktivitesi — login / register hızı (aktif kullanıcı göstergesi)",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{endpoint=~\"/login|/register\"}[5m])) by (endpoint)",
+          "legendFormat": "{{endpoint}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 2, "fillOpacity": 10 },
+          "unit": "reqps"
+        }
+      }
     }
   ],
   "refresh": "10s",

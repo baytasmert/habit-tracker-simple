@@ -40,6 +40,12 @@ postgres:
   user: habituser
   password: habitpass
   db: habits
+  # Kalıcı depolama — PVC ile veriler pod restart/yeniden deploy'da KORUNUR.
+  # k3s varsayılan storageClass'ı local-path otomatik provisioning yapar.
+  persistence:
+    enabled: true
+    size: 1Gi
+    storageClass: ""   # boş = cluster varsayılanı (k3s: local-path)
   resources:
     requests: { memory: 128Mi, cpu: 100m }
     limits: { memory: 512Mi, cpu: 500m }
@@ -74,7 +80,9 @@ prometheus:
 grafana:
   image: grafana/grafana:10.4.0
   adminUser: admin
-  adminPassword: admin
+  # admin.1234 → varsayılan "admin" olmadığı için Grafana her girişte
+  # şifre değiştirmeye zorlamaz (forced password change tetiklenmez)
+  adminPassword: admin.1234
   resources:
     requests: { memory: 128Mi, cpu: 50m }
     limits: { memory: 512Mi, cpu: 300m }
