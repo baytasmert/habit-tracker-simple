@@ -229,6 +229,8 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 .toggle-add:hover { background: #f7f8fd; }
 
 .add-form { display: flex; flex-direction: column; gap: 14px; padding: 0 22px 22px; }
+/* hidden attribute'u display:flex'i ezemiyordu → toggle (aç/kapat) çalışsın */
+.add-form[hidden] { display: none; }
 
 .form-row {
   display: grid;
