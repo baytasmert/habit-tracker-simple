@@ -113,32 +113,12 @@
       "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 5 }, "unit": "s" } }
     },
     {
-      "id": 14, "title": "Backend Süreç Kaynağı — CPU (çekirdek) & Bellek", "type": "timeseries",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 25 },
-      "targets": [
-        { "expr": "rate(process_cpu_seconds_total{job=\"habit-tracker-backend\"}[2m])", "legendFormat": "CPU {{instance}}", "refId": "A" },
-        { "expr": "process_resident_memory_bytes{job=\"habit-tracker-backend\"}", "legendFormat": "Bellek {{instance}}", "refId": "B" }
-      ],
-      "fieldConfig": {
-        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 8 }, "unit": "short" },
-        "overrides": [ { "matcher": { "id": "byFrameRefID", "options": "B" }, "properties": [ { "id": "unit", "value": "decbytes" }, { "id": "custom.axisPlacement", "value": "right" } ] } ]
-      }
-    },
-    {
       "id": 4, "title": "Gerçek API Yükü — endpoint payı (probe/scrape hariç, son 1s)", "type": "piechart",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 33 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 25 },
       "targets": [ { "expr": "sum(increase(http_requests_total{endpoint!~\"/health|/metrics\"}[1h])) by (endpoint)", "legendFormat": "{{endpoint}}", "refId": "A" } ],
       "options": { "legend": { "displayMode": "table", "placement": "right", "values": ["value", "percent"] }, "pieType": "donut", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } },
       "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "unit": "short" } }
-    },
-    {
-      "id": 5, "title": "Kullanıcı Aktivitesi — login / register hızı", "type": "timeseries",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 33 },
-      "targets": [ { "expr": "sum(rate(http_requests_total{endpoint=~\"/login|/register\"}[5m])) by (endpoint)", "legendFormat": "{{endpoint}}", "refId": "A" } ],
-      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 10 }, "unit": "reqps" } }
     }
   ],
   "refresh": "10s",
@@ -150,6 +130,6 @@
   "timezone": "",
   "title": "Habit Tracker — API & Servis Metrikleri",
   "uid": "habit-tracker-api",
-  "version": 3,
+  "version": 4,
   "weekStart": ""
 }
