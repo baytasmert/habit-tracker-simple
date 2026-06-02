@@ -831,3 +831,113 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
   margin-bottom: 16px;
 }
 .back-link:hover { color: var(--primary); }
+
+/* ═══════════════════════════════════════════════════════════════
+   PROFESYONEL KİMLİK KATMANI — mevcut sınıfları bozmadan üzerine yazar
+   (degrade marka · cam üst bar · kategori renkleri · derinlik · hareket)
+═══════════════════════════════════════════════════════════════ */
+:root {
+  --grad: linear-gradient(135deg, #6366f1, #8b5cf6);
+  --shadow-sm: 0 1px 3px rgba(16,24,40,.06), 0 1px 2px rgba(16,24,40,.04);
+  --shadow-md: 0 6px 18px rgba(16,24,40,.09);
+  --shadow-lg: 0 16px 40px rgba(16,24,40,.14);
+  --ring: 0 0 0 3px rgba(99,102,241,.20);
+  --cat-health: #16a34a;
+  --cat-fitness: #f59e0b;
+  --cat-study: #3b82f6;
+  --cat-mindfulness: #8b5cf6;
+}
+
+/* arka plan — yumuşak ışık huzmeleri */
+body.dashboard-page {
+  background:
+    radial-gradient(1100px 380px at 100% -8%, rgba(99,102,241,.10), transparent 60%),
+    radial-gradient(820px 320px at -8% 0%, rgba(139,92,246,.08), transparent 55%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+/* üst bar — cam (frosted) efekti + degrade marka */
+.top-bar {
+  background: rgba(255,255,255,.82);
+  backdrop-filter: saturate(160%) blur(10px);
+  -webkit-backdrop-filter: saturate(160%) blur(10px);
+  border-bottom: 1px solid var(--border);
+  box-shadow: none;
+}
+.top-bar h1 {
+  background: var(--grad);
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent; letter-spacing: -.3px;
+}
+.brand-icon {
+  display: grid; place-items: center;
+  width: 34px; height: 34px; border-radius: 10px;
+  background: var(--grad); font-size: 17px;
+  box-shadow: var(--shadow-md);
+}
+
+/* stat kartları — üst aksan şeridi + degrade rakam + hover */
+.stat-card {
+  position: relative; overflow: hidden;
+  border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+  transition: transform .16s ease, box-shadow .16s ease;
+}
+.stat-card::before {
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 3px; background: var(--grad);
+}
+.stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.stat-value { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.stats-row .stat-card:nth-child(2)::before { background: linear-gradient(135deg,#16a34a,#22c55e); }
+.stats-row .stat-card:nth-child(2) .stat-value { background: linear-gradient(135deg,#16a34a,#22c55e); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.stats-row .stat-card:nth-child(3)::before { background: linear-gradient(135deg,#f59e0b,#f97316); }
+.stats-row .stat-card:nth-child(3) .stat-value { background: linear-gradient(135deg,#f59e0b,#f97316); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* bölüm başlığı — sol degrade aksan çubuğu */
+.section-title { display: flex; align-items: center; gap: 9px; }
+.section-title::before {
+  content: ""; width: 4px; height: 17px; border-radius: 3px; background: var(--grad);
+}
+
+/* habit kartı — kategoriye göre renkli sol şerit + belirgin hover */
+.habit-item {
+  position: relative; overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+  animation: card-in .28s ease-out both;
+}
+.habit-item::after {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+  background: var(--primary); opacity: .9;
+}
+.habit-item[data-category="health"]::after { background: var(--cat-health); }
+.habit-item[data-category="fitness"]::after { background: var(--cat-fitness); }
+.habit-item[data-category="study"]::after { background: var(--cat-study); }
+.habit-item[data-category="mindfulness"]::after { background: var(--cat-mindfulness); }
+.habit-item.is-done::after { background: var(--success); }
+.habit-item:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+@keyframes card-in { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+
+/* birincil aksiyon butonları — degrade + gölge + basma efekti */
+.btn-create { background: var(--grad); box-shadow: var(--shadow-md); transition: transform .12s, filter .12s; }
+.btn-create:hover { filter: brightness(1.06); background: var(--grad); }
+.btn-track:not(.completed) { background: linear-gradient(135deg,#16a34a,#22c55e); box-shadow: var(--shadow-md); transition: transform .12s, filter .12s; }
+.btn-track:not(.completed):hover { filter: brightness(1.06); }
+.btn-create:active, .btn-track:active { transform: translateY(1px); }
+
+/* rozetler — hafif kabartma */
+.badge { background: #fff; border: 1px solid var(--border); box-shadow: var(--shadow-sm); font-weight: 500; }
+
+/* erişilebilir focus halkası */
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: none; box-shadow: var(--ring);
+}
+
+/* modal — yumuşak açılış animasyonu */
+.modal-overlay:not([hidden]) { animation: fade-in .16s ease-out; }
+.modal { animation: modal-pop .2s cubic-bezier(.2,.8,.2,1); }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modal-pop { from { opacity: 0; transform: translateY(8px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+/* mod butonları — seçiliyken degrade çerçeve hissi */
+.mood-btn.selected { border-color: #8b5cf6; background: rgba(139,92,246,.10); box-shadow: var(--shadow-sm); }

@@ -291,7 +291,7 @@ function renderHabit(h) {
     ? `<span class="badge">${CATEGORY_EMOJI[h.category] || "📌"} ${escape(h.category)}</span>` : "";
 
   return `
-    <div class="habit-item ${doneToday ? 'is-done' : ''}" data-id="${h.id}">
+    <div class="habit-item ${doneToday ? 'is-done' : ''}" data-id="${h.id}" data-category="${escape(h.category || '')}">
       <div class="habit-header">
         <div class="habit-title">
           <h3>${escape(h.name)} ${doneToday && tlog?.mood ? `<span class="title-mood">${tlog.mood}</span>` : ""}</h3>
