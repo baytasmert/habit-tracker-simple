@@ -110,6 +110,19 @@
       "targets": [ { "expr": "sum(increase(http_requests_total{endpoint!~\"/health|/metrics\"}[1h])) by (endpoint)", "legendFormat": "{{endpoint}}", "refId": "A" } ],
       "options": { "legend": { "displayMode": "table", "placement": "right", "values": ["value", "percent"] }, "pieType": "donut", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } },
       "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "unit": "short" } }
+    },
+    {
+      "id": 14, "title": "Backend Pod CPU (çekirdek) & Bellek — SERVİS bazlı (CPU limiti: 2)", "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 33 },
+      "targets": [
+        { "expr": "rate(process_cpu_seconds_total{job=\"habit-tracker-backend\"}[2m])", "legendFormat": "CPU çekirdek {{instance}}", "refId": "A" },
+        { "expr": "process_resident_memory_bytes{job=\"habit-tracker-backend\"}", "legendFormat": "Bellek {{instance}}", "refId": "B" }
+      ],
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 8 }, "unit": "short" },
+        "overrides": [ { "matcher": { "id": "byFrameRefID", "options": "B" }, "properties": [ { "id": "unit", "value": "decbytes" }, { "id": "custom.axisPlacement", "value": "right" } ] } ]
+      }
     }
   ],
   "refresh": "10s",
@@ -121,6 +134,6 @@
   "timezone": "",
   "title": "Habit Tracker — API & Servis Metrikleri",
   "uid": "habit-tracker-api",
-  "version": 5,
+  "version": 6,
   "weekStart": ""
 }

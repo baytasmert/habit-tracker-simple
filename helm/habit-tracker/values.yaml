@@ -22,9 +22,11 @@ backend:
   # Tek replika: aktif kullanıcı / in-flight metrikleri tek bellekte → kesin
   # sayım (2 replikada pod-local sayaçlar toplanınca yaklaşıktı). HA için 2 yap.
   replicas: 1
+  # CPU limiti 500m→2000m: yük altında bcrypt tek pod'u throttle ediyordu
+  # (host CPU boştayken p95 13s'ye fırlıyordu). Host'ta yer var, pod'a ver.
   resources:
-    requests: { memory: 128Mi, cpu: 100m }
-    limits: { memory: 512Mi, cpu: 500m }
+    requests: { memory: 128Mi, cpu: 250m }
+    limits: { memory: 512Mi, cpu: 2000m }
 
 frontend:
   image:

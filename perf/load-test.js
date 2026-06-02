@@ -15,70 +15,61 @@ export const options = {
   },
 };
 
-function randSuffix() {
-  return Math.random().toString(36).slice(2, 10);
-}
+// k6 her VU'yu ayrı JS örneğinde çalıştırır → modül seviyesi değişkenler
+// VU'ya özeldir. Her VU kullanıcısını BİR KEZ kurar, sonra token'ı yeniden
+// kullanır. (Gerçek kullanıcı her istekte kayıt olmaz; bu, bcrypt'in her
+// iterasyonda CPU'yu doyurmasını engeller → gerçekçi yük profili.)
+let authHeaders = null;
+let habitId = null;
 
-export default function () {
-  // ─ Register fresh user per VU iteration ─────────────
-  const u = `user_${__VU}_${__ITER}_${randSuffix()}`;
-  const email = `${u}@x.com`;
-  const credentials = JSON.stringify({
-    username: u,
-    email: email,
-    password: 'pass123',
-  });
-
-  const reg = http.post(`${BASE_URL}/register`, credentials, {
-    headers: { 'Content-Type': 'application/json' },
-    responseCallback: http.expectedStatuses(201, 400, 409),
-  });
-  check(reg, { 'register handled': (r) => r.status === 201 || r.status === 400 });
-
-  // ─ Login ───────────────────────────────────────────
-  const loginRes = http.post(
+function setupUser() {
+  const email = `loaduser_${__VU}@x.com`;
+  const json = { 'Content-Type': 'application/json' };
+  http.post(
+    `${BASE_URL}/register`,
+    JSON.stringify({ username: `loaduser_${__VU}`, email, password: 'pass123' }),
+    { headers: json, responseCallback: http.expectedStatuses(201, 400, 409) }
+  );
+  const login = http.post(
     `${BASE_URL}/login`,
     JSON.stringify({ email, password: 'pass123' }),
-    { headers: { 'Content-Type': 'application/json' } }
+    { headers: json }
   );
-  check(loginRes, { 'login OK': (r) => r.status === 200 });
-  if (loginRes.status !== 200) {
-    sleep(1);
-    return;
-  }
-  const token = loginRes.json('access_token');
-  const authHeaders = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`,
-  };
+  check(login, { 'login OK': (r) => r.status === 200 });
+  if (login.status !== 200) return false;
+  authHeaders = { 'Content-Type': 'application/json', Authorization: `Bearer ${login.json('access_token')}` };
 
-  // ─ Create habit ────────────────────────────────────
-  const createRes = http.post(
+  const create = http.post(
     `${BASE_URL}/habits`,
     JSON.stringify({ name: 'k6 habit', category: 'fitness', goal_days_per_week: 5 }),
     { headers: authHeaders }
   );
-  check(createRes, { 'create habit OK': (r) => r.status === 201 });
-  if (createRes.status !== 201) {
-    sleep(1);
-    return;
+  check(create, { 'create habit OK': (r) => r.status === 201 });
+  if (create.status === 201) habitId = create.json('id');
+  return true;
+}
+
+export default function () {
+  // İlk iterasyonda kullanıcı + habit kur (VU başına bir kez)
+  if (!authHeaders) {
+    if (!setupUser()) { sleep(1); return; }
   }
-  const habitId = createRes.json('id');
 
-  // ─ List habits ─────────────────────────────────────
-  const listRes = http.get(`${BASE_URL}/habits`, { headers: authHeaders });
-  check(listRes, { 'list habits OK': (r) => r.status === 200 });
+  // ─ Gerçek kullanım: ucuz authenticated istekler ─────
+  const list = http.get(`${BASE_URL}/habits`, { headers: authHeaders });
+  check(list, { 'list habits OK': (r) => r.status === 200 });
 
-  // ─ Track + streak ──────────────────────────────────
-  const trackRes = http.post(
-    `${BASE_URL}/habits/${habitId}/track`,
-    JSON.stringify({ done: true }),
-    { headers: authHeaders }
-  );
-  check(trackRes, { 'track habit OK': (r) => r.status === 201 });
+  if (habitId) {
+    const track = http.post(
+      `${BASE_URL}/habits/${habitId}/track`,
+      JSON.stringify({ done: true }),
+      { headers: authHeaders }
+    );
+    check(track, { 'track OK': (r) => r.status === 201 });
 
-  const streakRes = http.get(`${BASE_URL}/habits/${habitId}/streak`, { headers: authHeaders });
-  check(streakRes, { 'streak OK': (r) => r.status === 200 });
+    const streak = http.get(`${BASE_URL}/habits/${habitId}/streak`, { headers: authHeaders });
+    check(streak, { 'streak OK': (r) => r.status === 200 });
+  }
 
-  sleep(0.3);
+  sleep(1);
 }
