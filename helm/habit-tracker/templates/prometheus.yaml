@@ -76,6 +76,23 @@ data:
       - job_name: 'prometheus'
         static_configs:
           - targets: ['localhost:9090']
+{{- if .Values.prometheus.persistence.enabled }}
+---
+# Metrik geçmişi (TSDB) kalıcı kalsın — restart'ta dünün verileri durur
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-data
+  labels: {{- include "habit-tracker.labels" . | nindent 4 }}
+spec:
+  accessModes: ["ReadWriteOnce"]
+  {{- if .Values.prometheus.persistence.storageClass }}
+  storageClassName: {{ .Values.prometheus.persistence.storageClass | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.prometheus.persistence.size }}
+{{- end }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -84,6 +101,9 @@ metadata:
   labels: {{- include "habit-tracker.labels" . | nindent 4 }}
 spec:
   replicas: 1
+  # PVC ReadWriteOnce → eski pod kapanmadan yeni pod aynı diski tutamaz
+  strategy:
+    type: Recreate
   selector:
     matchLabels: { app: prometheus }
   template:
@@ -96,13 +116,26 @@ spec:
         config-version: "3"
     spec:
       serviceAccountName: prometheus
+      # prom/prometheus imajı nobody (65534) çalışır; PVC dizinini bu gruba
+      # yazılabilir yap (yoksa TSDB'ye yazamaz, crashloop)
+      securityContext:
+        fsGroup: 65534
       containers:
         - name: prometheus
           image: {{ .Values.prometheus.image }}
+          # args'ı override edince TÜM bayrakları biz veririz (config yolu dahil)
+          args:
+            - --config.file=/etc/prometheus/prometheus.yml
+            - --storage.tsdb.path=/prometheus
+            - --storage.tsdb.retention.time={{ .Values.prometheus.persistence.retention }}
+            - --web.enable-lifecycle
           ports:
             - containerPort: 9090
           volumeMounts:
             - { name: config, mountPath: /etc/prometheus }
+            {{- if .Values.prometheus.persistence.enabled }}
+            - { name: data, mountPath: /prometheus }
+            {{- end }}
           readinessProbe:
             httpGet: { path: /-/ready, port: 9090 }
             initialDelaySeconds: 5
@@ -111,6 +144,11 @@ spec:
       volumes:
         - name: config
           configMap: { name: prometheus-config }
+        {{- if .Values.prometheus.persistence.enabled }}
+        - name: data
+          persistentVolumeClaim:
+            claimName: prometheus-data
+        {{- end }}
 ---
 apiVersion: v1
 kind: Service

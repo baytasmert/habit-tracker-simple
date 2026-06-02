@@ -76,6 +76,12 @@ jaeger:
 # ── Prometheus ────────────────────────────────────────────────────
 prometheus:
   image: prom/prometheus:v2.51.0
+  # Metrik geçmişi kalıcı — restart'ta önceki günlerin verileri korunur
+  persistence:
+    enabled: true
+    size: 2Gi
+    retention: "15d"        # 15 günlük metrik sakla
+    storageClass: ""        # boş = cluster varsayılanı (k3s: local-path)
   resources:
     requests: { memory: 128Mi, cpu: 50m }
     limits: { memory: 512Mi, cpu: 300m }
