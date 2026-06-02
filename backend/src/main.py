@@ -90,7 +90,11 @@ async def metrics_middleware(request: Request, call_next):
     try:
         response = await call_next(request)
         elapsed = time.time() - start
-        path = request.url.path
+        # Ham path yerine ROUTE ŞABLONU kullan: /habits/1/track, /habits/2/track
+        # gibi her ID ayrı seri olmasın → tek seri /habits/{habit_id}/track.
+        # (Yüksek kardinaliteyi önler.) Eşleşmeyen 404'ler "unmatched" altında toplanır.
+        route = request.scope.get("route")
+        path = getattr(route, "path", None) or "unmatched"
         REQ_TOTAL.labels(request.method, path, response.status_code).inc()
         REQ_DURATION.labels(request.method, path).observe(elapsed)
         return response
