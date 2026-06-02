@@ -2,120 +2,195 @@
   "annotations": { "list": [] },
   "editable": true,
   "fiscalYearStartMonth": 0,
-  "graphTooltip": 0,
+  "graphTooltip": 1,
   "id": null,
   "links": [],
   "liveNow": false,
   "panels": [
     {
-      "id": 1,
-      "title": "Request Rate (req/s)",
-      "type": "timeseries",
+      "id": 10,
+      "title": "Erişilebilirlik (başarı oranı)",
+      "type": "stat",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
       "targets": [
         {
-          "expr": "sum(rate(http_requests_total[1m])) by (endpoint)",
-          "legendFormat": "{{endpoint}}",
+          "expr": "sum(rate(http_requests_total{status=~\"2..\"}[5m])) / clamp_min(sum(rate(http_requests_total[5m])), 0.001) * 100",
           "refId": "A"
         }
       ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background", "graphMode": "none", "textMode": "auto"
+      },
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "palette-classic" },
-          "custom": { "lineWidth": 2, "fillOpacity": 10 },
-          "unit": "reqps"
+          "unit": "percent", "decimals": 1, "min": 0, "max": 100,
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "red", "value": null },
+            { "color": "orange", "value": 95 },
+            { "color": "green", "value": 99 }
+          ] }
         }
+      }
+    },
+    {
+      "id": 11,
+      "title": "Aktif Backend Pod",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "targets": [
+        { "expr": "count(up{job=\"habit-tracker-backend\"} == 1)", "refId": "A" }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background", "graphMode": "none", "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "red", "value": null },
+            { "color": "green", "value": 1 }
+          ] }
+        }
+      }
+    },
+    {
+      "id": 12,
+      "title": "Backend Uptime",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "targets": [
+        { "expr": "time() - min(process_start_time_seconds{job=\"habit-tracker-backend\"})", "refId": "A" }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "value", "graphMode": "none", "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": { "unit": "s", "color": { "mode": "fixed", "fixedColor": "blue" } }
+      }
+    },
+    {
+      "id": 13,
+      "title": "Bellek (RSS, pod ort.)",
+      "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "targets": [
+        { "expr": "avg(process_resident_memory_bytes{job=\"habit-tracker-backend\"})", "refId": "A" }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background", "graphMode": "area", "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decbytes",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "orange", "value": 400000000 },
+            { "color": "red", "value": 500000000 }
+          ] }
+        }
+      }
+    },
+    {
+      "id": 1,
+      "title": "İstek Hızı (req/s) — endpoint bazlı",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "targets": [
+        { "expr": "sum(rate(http_requests_total[1m])) by (endpoint)", "legendFormat": "{{endpoint}}", "refId": "A" }
+      ],
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 10 }, "unit": "reqps" }
       }
     },
     {
       "id": 2,
-      "title": "Error Rate (4xx / 5xx)",
+      "title": "Hata Hızı (4xx / 5xx) — status bazlı",
       "type": "timeseries",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
       "targets": [
-        {
-          "expr": "sum(rate(http_requests_total{status=~\"4..|5..\"}[1m])) by (status)",
-          "legendFormat": "{{status}}",
-          "refId": "A"
-        }
+        { "expr": "sum(rate(http_requests_total{status=~\"4..|5..\"}[1m])) by (status)", "legendFormat": "{{status}}", "refId": "A" }
       ],
       "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "palette-classic" },
-          "custom": { "lineWidth": 2, "fillOpacity": 10 },
-          "unit": "reqps"
-        }
+        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 10 }, "unit": "reqps" }
       }
     },
     {
       "id": 3,
-      "title": "Latency p95 / p99 (s)",
+      "title": "Gecikme p95 / p99 (s) — endpoint bazlı",
       "type": "timeseries",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
       "targets": [
-        {
-          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, endpoint))",
-          "legendFormat": "p95 {{endpoint}}",
-          "refId": "A"
-        },
-        {
-          "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, endpoint))",
-          "legendFormat": "p99 {{endpoint}}",
-          "refId": "B"
-        }
+        { "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, endpoint))", "legendFormat": "p95 {{endpoint}}", "refId": "A" },
+        { "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, endpoint))", "legendFormat": "p99 {{endpoint}}", "refId": "B" }
       ],
       "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "palette-classic" },
-          "custom": { "lineWidth": 2, "fillOpacity": 5 },
-          "unit": "s"
-        }
+        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 5 }, "unit": "s" }
+      }
+    },
+    {
+      "id": 14,
+      "title": "Backend Kaynak Kullanımı — CPU (çekirdek) & Bellek",
+      "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "targets": [
+        { "expr": "rate(process_cpu_seconds_total{job=\"habit-tracker-backend\"}[2m])", "legendFormat": "CPU {{instance}}", "refId": "A" },
+        { "expr": "process_resident_memory_bytes{job=\"habit-tracker-backend\"}", "legendFormat": "Bellek {{instance}}", "refId": "B" }
+      ],
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 8 }, "unit": "short" },
+        "overrides": [
+          {
+            "matcher": { "id": "byFrameRefID", "options": "B" },
+            "properties": [
+              { "id": "unit", "value": "decbytes" },
+              { "id": "custom.axisPlacement", "value": "right" }
+            ]
+          }
+        ]
       }
     },
     {
       "id": 4,
-      "title": "Gerçek API Yükü — endpoint bazlı (probe /health + scrape /metrics hariç, son 1s)",
+      "title": "Gerçek API Yükü — endpoint payı (probe/scrape hariç, son 1s)",
       "type": "piechart",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
       "targets": [
-        {
-          "expr": "sum(increase(http_requests_total{endpoint!~\"/health|/metrics\"}[1h])) by (endpoint)",
-          "legendFormat": "{{endpoint}}",
-          "refId": "A"
-        }
+        { "expr": "sum(increase(http_requests_total{endpoint!~\"/health|/metrics\"}[1h])) by (endpoint)", "legendFormat": "{{endpoint}}", "refId": "A" }
       ],
       "options": {
         "legend": { "displayMode": "table", "placement": "right", "values": ["value", "percent"] },
         "pieType": "donut",
         "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
       },
-      "fieldConfig": {
-        "defaults": { "color": { "mode": "palette-classic" }, "unit": "short" }
-      }
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "unit": "short" } }
     },
     {
       "id": 5,
-      "title": "Kullanıcı Aktivitesi — login / register hızı (aktif kullanıcı göstergesi)",
+      "title": "Kullanıcı Aktivitesi — login / register hızı",
       "type": "timeseries",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
       "targets": [
-        {
-          "expr": "sum(rate(http_requests_total{endpoint=~\"/login|/register\"}[5m])) by (endpoint)",
-          "legendFormat": "{{endpoint}}",
-          "refId": "A"
-        }
+        { "expr": "sum(rate(http_requests_total{endpoint=~\"/login|/register\"}[5m])) by (endpoint)", "legendFormat": "{{endpoint}}", "refId": "A" }
       ],
       "fieldConfig": {
-        "defaults": {
-          "color": { "mode": "palette-classic" },
-          "custom": { "lineWidth": 2, "fillOpacity": 10 },
-          "unit": "reqps"
-        }
+        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 10 }, "unit": "reqps" }
       }
     }
   ],
@@ -123,11 +198,11 @@
   "schemaVersion": 38,
   "tags": ["habit-tracker"],
   "templating": { "list": [] },
-  "time": { "from": "now-15m", "to": "now" },
+  "time": { "from": "now-30m", "to": "now" },
   "timepicker": {},
   "timezone": "",
-  "title": "Habit Tracker — API Metrics",
+  "title": "Habit Tracker — API & Servis Metrikleri",
   "uid": "habit-tracker-api",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }
