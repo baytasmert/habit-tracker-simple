@@ -6,12 +6,13 @@ Frontend ayrı bir servistir (NGINX → frontend/); bu API HTML döndürmez.
 """
 from datetime import date, timedelta
 import time
+import threading
 
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
-from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
 
 from . import models, schemas, auth, s3_client
 from .database import engine, get_db
@@ -57,21 +58,44 @@ app.add_middleware(
 setup_tracing(app, engine)
 
 # ── Prometheus ───────────────────────────────────────────────────
+# Counter: sadece artar (toplam). Gauge: anlık, artıp azalan değer.
 REQ_TOTAL = Counter("http_requests_total", "Total HTTP requests",
                     ["method", "endpoint", "status"])
 REQ_DURATION = Histogram("http_request_duration_seconds", "Request duration",
                          ["method", "endpoint"])
+IN_FLIGHT = Gauge("http_in_flight_requests", "Şu an işlenen eşzamanlı istek sayısı")
+ACTIVE_USERS = Gauge("active_users", "Son 5 dk içinde istek atan benzersiz kullanıcı")
+
+# Aktif kullanıcı takibi: email -> son görülme zamanı (pencere 5 dk).
+# Stateless JWT olduğu için oturum yok; bu yaklaşık bir "anlık aktif" ölçümü.
+_ACTIVE_WINDOW = 300
+_active_seen: dict[str, float] = {}
+_active_lock = threading.Lock()
+
+
+def _touch_active_user(email: str) -> None:
+    now = time.time()
+    with _active_lock:
+        _active_seen[email] = now
+        cutoff = now - _ACTIVE_WINDOW
+        for e in [e for e, t in _active_seen.items() if t < cutoff]:
+            del _active_seen[e]
+        ACTIVE_USERS.set(len(_active_seen))
 
 
 @app.middleware("http")
 async def metrics_middleware(request: Request, call_next):
+    IN_FLIGHT.inc()
     start = time.time()
-    response = await call_next(request)
-    elapsed = time.time() - start
-    path = request.url.path
-    REQ_TOTAL.labels(request.method, path, response.status_code).inc()
-    REQ_DURATION.labels(request.method, path).observe(elapsed)
-    return response
+    try:
+        response = await call_next(request)
+        elapsed = time.time() - start
+        path = request.url.path
+        REQ_TOTAL.labels(request.method, path, response.status_code).inc()
+        REQ_DURATION.labels(request.method, path).observe(elapsed)
+        return response
+    finally:
+        IN_FLIGHT.dec()
 
 
 # ── Health / Metrics ─────────────────────────────────────────────
@@ -93,6 +117,7 @@ def get_current_user(
     user = db.query(models.User).filter(models.User.email == email).first()
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
+    _touch_active_user(email)   # anlık aktif kullanıcı metriği
     return user
 
 

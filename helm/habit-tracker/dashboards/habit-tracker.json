@@ -1,197 +1,144 @@
 {
   "annotations": { "list": [] },
   "editable": true,
-  "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
   "id": null,
   "links": [],
   "liveNow": false,
   "panels": [
     {
-      "id": 10,
-      "title": "Erişilebilirlik (başarı oranı)",
-      "type": "stat",
+      "id": 10, "title": "Erişilebilirlik (başarı oranı)", "type": "stat",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
-      "targets": [
-        {
-          "expr": "sum(rate(http_requests_total{status=~\"2..\"}[5m])) / clamp_min(sum(rate(http_requests_total[5m])), 0.001) * 100",
-          "refId": "A"
-        }
-      ],
-      "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "colorMode": "background", "graphMode": "none", "textMode": "auto"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percent", "decimals": 1, "min": 0, "max": 100,
-          "color": { "mode": "thresholds" },
-          "thresholds": { "mode": "absolute", "steps": [
-            { "color": "red", "value": null },
-            { "color": "orange", "value": 95 },
-            { "color": "green", "value": 99 }
-          ] }
-        }
-      }
+      "targets": [ { "expr": "sum(rate(http_requests_total{status=~\"2..\"}[5m])) / clamp_min(sum(rate(http_requests_total[5m])), 0.001) * 100", "refId": "A" } ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "background", "graphMode": "none", "textMode": "auto" },
+      "fieldConfig": { "defaults": { "unit": "percent", "decimals": 1, "min": 0, "max": 100, "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "orange", "value": 95 }, { "color": "green", "value": 99 } ] } } }
     },
     {
-      "id": 11,
-      "title": "Aktif Backend Pod",
-      "type": "stat",
+      "id": 20, "title": "Aktif Kullanıcı (son 5 dk)", "type": "stat",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
-      "targets": [
-        { "expr": "count(up{job=\"habit-tracker-backend\"} == 1)", "refId": "A" }
-      ],
-      "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "colorMode": "background", "graphMode": "none", "textMode": "auto"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "none",
-          "color": { "mode": "thresholds" },
-          "thresholds": { "mode": "absolute", "steps": [
-            { "color": "red", "value": null },
-            { "color": "green", "value": 1 }
-          ] }
-        }
-      }
+      "targets": [ { "expr": "sum(active_users)", "refId": "A" } ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "background", "graphMode": "area", "textMode": "auto" },
+      "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "fixed", "fixedColor": "purple" } } }
     },
     {
-      "id": 12,
-      "title": "Backend Uptime",
-      "type": "stat",
+      "id": 21, "title": "Eşzamanlı İstek (in-flight)", "type": "stat",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
-      "targets": [
-        { "expr": "time() - min(process_start_time_seconds{job=\"habit-tracker-backend\"})", "refId": "A" }
-      ],
-      "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "colorMode": "value", "graphMode": "none", "textMode": "auto"
-      },
-      "fieldConfig": {
-        "defaults": { "unit": "s", "color": { "mode": "fixed", "fixedColor": "blue" } }
-      }
+      "targets": [ { "expr": "sum(http_in_flight_requests)", "refId": "A" } ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "background", "graphMode": "area", "textMode": "auto" },
+      "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "fixed", "fixedColor": "blue" } } }
     },
     {
-      "id": 13,
-      "title": "Bellek (RSS, pod ort.)",
-      "type": "stat",
+      "id": 11, "title": "Aktif Backend Pod", "type": "stat",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "targets": [ { "expr": "count(up{job=\"habit-tracker-backend\"} == 1)", "refId": "A" } ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "background", "graphMode": "none", "textMode": "auto" },
+      "fieldConfig": { "defaults": { "unit": "none", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] } } }
+    },
+    {
+      "id": 22, "title": "Kapasite — Aktif Kullanıcı vs Host CPU % / RAM % (zaman bazlı)", "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 4 },
       "targets": [
-        { "expr": "avg(process_resident_memory_bytes{job=\"habit-tracker-backend\"})", "refId": "A" }
+        { "expr": "sum(active_users)", "legendFormat": "Aktif kullanıcı", "refId": "A" },
+        { "expr": "sum(http_in_flight_requests)", "legendFormat": "Eşzamanlı istek", "refId": "D" },
+        { "expr": "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[2m])) * 100)", "legendFormat": "Host CPU %", "refId": "B" },
+        { "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100", "legendFormat": "Host RAM %", "refId": "C" }
       ],
-      "options": {
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "colorMode": "background", "graphMode": "area", "textMode": "auto"
-      },
       "fieldConfig": {
-        "defaults": {
-          "unit": "decbytes",
-          "color": { "mode": "thresholds" },
-          "thresholds": { "mode": "absolute", "steps": [
-            { "color": "green", "value": null },
-            { "color": "orange", "value": 400000000 },
-            { "color": "red", "value": 500000000 }
-          ] }
-        }
+        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 8 }, "unit": "none" },
+        "overrides": [
+          { "matcher": { "id": "byFrameRefID", "options": "B" }, "properties": [ { "id": "unit", "value": "percent" }, { "id": "max", "value": 100 }, { "id": "custom.axisPlacement", "value": "right" }, { "id": "custom.axisLabel", "value": "Host %" } ] },
+          { "matcher": { "id": "byFrameRefID", "options": "C" }, "properties": [ { "id": "unit", "value": "percent" }, { "id": "max", "value": 100 }, { "id": "custom.axisPlacement", "value": "right" } ] }
+        ]
       }
     },
     {
-      "id": 1,
-      "title": "İstek Hızı (req/s) — endpoint bazlı",
-      "type": "timeseries",
+      "id": 23, "title": "Host CPU %", "type": "stat",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
-      "targets": [
-        { "expr": "sum(rate(http_requests_total[1m])) by (endpoint)", "legendFormat": "{{endpoint}}", "refId": "A" }
-      ],
-      "fieldConfig": {
-        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 10 }, "unit": "reqps" }
-      }
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 13 },
+      "targets": [ { "expr": "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[2m])) * 100)", "refId": "A" } ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "background", "graphMode": "area", "textMode": "auto" },
+      "fieldConfig": { "defaults": { "unit": "percent", "decimals": 1, "min": 0, "max": 100, "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 70 }, { "color": "red", "value": 90 } ] } } }
     },
     {
-      "id": 2,
-      "title": "Hata Hızı (4xx / 5xx) — status bazlı",
-      "type": "timeseries",
+      "id": 24, "title": "Host RAM %", "type": "stat",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
-      "targets": [
-        { "expr": "sum(rate(http_requests_total{status=~\"4..|5..\"}[1m])) by (status)", "legendFormat": "{{status}}", "refId": "A" }
-      ],
-      "fieldConfig": {
-        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 10 }, "unit": "reqps" }
-      }
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 13 },
+      "targets": [ { "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100", "refId": "A" } ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "background", "graphMode": "area", "textMode": "auto" },
+      "fieldConfig": { "defaults": { "unit": "percent", "decimals": 1, "min": 0, "max": 100, "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 75 }, { "color": "red", "value": 90 } ] } } }
     },
     {
-      "id": 3,
-      "title": "Gecikme p95 / p99 (s) — endpoint bazlı",
-      "type": "timeseries",
+      "id": 25, "title": "Host Disk % (/)", "type": "stat",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 13 },
+      "targets": [ { "expr": "(1 - (node_filesystem_avail_bytes{mountpoint=\"/\",fstype!~\"tmpfs|overlay\"} / node_filesystem_size_bytes{mountpoint=\"/\",fstype!~\"tmpfs|overlay\"})) * 100", "refId": "A" } ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "background", "graphMode": "none", "textMode": "auto" },
+      "fieldConfig": { "defaults": { "unit": "percent", "decimals": 1, "min": 0, "max": 100, "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 80 }, { "color": "red", "value": 90 } ] } } }
+    },
+    {
+      "id": 12, "title": "Backend Uptime", "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 13 },
+      "targets": [ { "expr": "time() - min(process_start_time_seconds{job=\"habit-tracker-backend\"})", "refId": "A" } ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "colorMode": "value", "graphMode": "none", "textMode": "auto" },
+      "fieldConfig": { "defaults": { "unit": "s", "color": { "mode": "fixed", "fixedColor": "blue" } } }
+    },
+    {
+      "id": 1, "title": "İstek Hızı (req/s) — endpoint bazlı", "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 17 },
+      "targets": [ { "expr": "sum(rate(http_requests_total[1m])) by (endpoint)", "legendFormat": "{{endpoint}}", "refId": "A" } ],
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 10 }, "unit": "reqps" } }
+    },
+    {
+      "id": 2, "title": "Hata Hızı (4xx / 5xx) — status bazlı", "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 17 },
+      "targets": [ { "expr": "sum(rate(http_requests_total{status=~\"4..|5..\"}[1m])) by (status)", "legendFormat": "{{status}}", "refId": "A" } ],
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 10 }, "unit": "reqps" } }
+    },
+    {
+      "id": 3, "title": "Gecikme p95 / p99 (s) — endpoint bazlı", "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 25 },
       "targets": [
         { "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, endpoint))", "legendFormat": "p95 {{endpoint}}", "refId": "A" },
         { "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, endpoint))", "legendFormat": "p99 {{endpoint}}", "refId": "B" }
       ],
-      "fieldConfig": {
-        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 5 }, "unit": "s" }
-      }
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 5 }, "unit": "s" } }
     },
     {
-      "id": 14,
-      "title": "Backend Kaynak Kullanımı — CPU (çekirdek) & Bellek",
-      "type": "timeseries",
+      "id": 14, "title": "Backend Süreç Kaynağı — CPU (çekirdek) & Bellek", "type": "timeseries",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 25 },
       "targets": [
         { "expr": "rate(process_cpu_seconds_total{job=\"habit-tracker-backend\"}[2m])", "legendFormat": "CPU {{instance}}", "refId": "A" },
         { "expr": "process_resident_memory_bytes{job=\"habit-tracker-backend\"}", "legendFormat": "Bellek {{instance}}", "refId": "B" }
       ],
       "fieldConfig": {
         "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 8 }, "unit": "short" },
-        "overrides": [
-          {
-            "matcher": { "id": "byFrameRefID", "options": "B" },
-            "properties": [
-              { "id": "unit", "value": "decbytes" },
-              { "id": "custom.axisPlacement", "value": "right" }
-            ]
-          }
-        ]
+        "overrides": [ { "matcher": { "id": "byFrameRefID", "options": "B" }, "properties": [ { "id": "unit", "value": "decbytes" }, { "id": "custom.axisPlacement", "value": "right" } ] } ]
       }
     },
     {
-      "id": 4,
-      "title": "Gerçek API Yükü — endpoint payı (probe/scrape hariç, son 1s)",
-      "type": "piechart",
+      "id": 4, "title": "Gerçek API Yükü — endpoint payı (probe/scrape hariç, son 1s)", "type": "piechart",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
-      "targets": [
-        { "expr": "sum(increase(http_requests_total{endpoint!~\"/health|/metrics\"}[1h])) by (endpoint)", "legendFormat": "{{endpoint}}", "refId": "A" }
-      ],
-      "options": {
-        "legend": { "displayMode": "table", "placement": "right", "values": ["value", "percent"] },
-        "pieType": "donut",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
-      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 33 },
+      "targets": [ { "expr": "sum(increase(http_requests_total{endpoint!~\"/health|/metrics\"}[1h])) by (endpoint)", "legendFormat": "{{endpoint}}", "refId": "A" } ],
+      "options": { "legend": { "displayMode": "table", "placement": "right", "values": ["value", "percent"] }, "pieType": "donut", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } },
       "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "unit": "short" } }
     },
     {
-      "id": 5,
-      "title": "Kullanıcı Aktivitesi — login / register hızı",
-      "type": "timeseries",
+      "id": 5, "title": "Kullanıcı Aktivitesi — login / register hızı", "type": "timeseries",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
-      "targets": [
-        { "expr": "sum(rate(http_requests_total{endpoint=~\"/login|/register\"}[5m])) by (endpoint)", "legendFormat": "{{endpoint}}", "refId": "A" }
-      ],
-      "fieldConfig": {
-        "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 10 }, "unit": "reqps" }
-      }
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 33 },
+      "targets": [ { "expr": "sum(rate(http_requests_total{endpoint=~\"/login|/register\"}[5m])) by (endpoint)", "legendFormat": "{{endpoint}}", "refId": "A" } ],
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "lineWidth": 2, "fillOpacity": 10 }, "unit": "reqps" } }
     }
   ],
   "refresh": "10s",
@@ -203,6 +150,6 @@
   "timezone": "",
   "title": "Habit Tracker — API & Servis Metrikleri",
   "uid": "habit-tracker-api",
-  "version": 2,
+  "version": 3,
   "weekStart": ""
 }
