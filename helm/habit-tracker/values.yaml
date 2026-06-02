@@ -17,7 +17,7 @@ domain: "vivabit.digital"
 backend:
   image:
     repository: ghcr.io/baytasmert/habit-tracker-simple/backend
-    tag: b9461eee4435b169a62c20978faffa860dd50055
+    tag: be24cf8de4d773e18ca7eb213b154b5024d8ed43
     pullPolicy: IfNotPresent
   # Tek replika: aktif kullanıcı / in-flight metrikleri tek bellekte → kesin
   # sayım (2 replikada pod-local sayaçlar toplanınca yaklaşıktı). HA için 2 yap.
@@ -31,7 +31,7 @@ backend:
 frontend:
   image:
     repository: ghcr.io/baytasmert/habit-tracker-simple/frontend
-    tag: b9461eee4435b169a62c20978faffa860dd50055
+    tag: be24cf8de4d773e18ca7eb213b154b5024d8ed43
     pullPolicy: IfNotPresent
   replicas: 2
   resources:
