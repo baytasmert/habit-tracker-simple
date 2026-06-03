@@ -30,16 +30,17 @@ git add frontend/index.html
 git commit -m "demo: sürüm v1.1"
 git push -u origin demo/canli
 gh pr create --fill --base main
-gh pr checks --watch              # CI yeşil olmaya başlar (lint→test→build→smoke)
+gh pr checks --watch              # "CI / CD" yeşil olur: lint→test→newman→build→deploy-smoke
 
-# 3) Merge  →  CD tetiklenir: build image push + cd-bump (Adım 2: "merge → CD")
+# 3) Merge  →  CD tetiklenir (Adım 2: "merge → CD")
 gh pr merge --merge --delete-branch
+#  ↳ merge'de testler TEKRAR KOŞMAZ; yalnız build (imaj) + cd-bump (values.yaml tag) → hızlı
 
 # 4) ArgoCD deploy'u izle, sonra vivabit.digital'i yenile → "Sürüm v1.1" canlı
 kubectl -n argocd annotate application habit-tracker-simple argocd.argoproj.io/refresh=hard --overwrite
 kubectl get application habit-tracker-simple -n argocd -w
 ```
-⏱️ Tam tur ~6 dk CI + ~1-3 dk ArgoCD → **slot başında başlat**, demoda sonucu göster.
+⏱️ PR CI ~6 dk · merge (build+cd-bump, test yok) ~2-3 dk · ArgoCD ~1-3 dk → **PR'ı slot başında aç/merge et**, demoda sonucu göster.
 
 ---
 
@@ -88,17 +89,21 @@ deactivate
 3. Demo: **CI yeşil** (gh / Actions) → **ArgoCD Synced** (D) → `vivabit.digital` "v1.1" **canlı** → **Grafana** panelleri → **k6 QUICK** (C) → **1 E2E** (E).
 
 ## 📌 GitOps best-practice (savunma notu)
-Hocanın "PR→CI, merge→CD" akışı = endüstri standardı **deployment gate**:
-- **PR aç → CI** = quality gate (lint/test/coverage/smoke). Bozuk kod merge edilse de **prod'a gidemez**.
-- **PR merge → CD** = `build` imajı GHCR'a push'lar + `cd-bump` values.yaml tag'ini bump'lar → **ArgoCD** otomatik sync.
-- **CI kırmızıysa `cd-bump` çalışmaz** → prod eski/sağlam sürümde kalır (fail-fast + deployment gate).
+Hocanın "PR→CI, merge→CD" akışı = endüstri standardı **deployment gate**. Tek dosya `.github/workflows/ci-cd.yml`, event'e göre ayrışır:
+- **PR aç → CI** = kalite kapısı (lint/test/coverage/newman/build/**deploy-smoke**). Bozuk kod merge edilse de **prod'a gidemez**.
+- **PR merge → CD** = yalnız `build` (merge-commit imajı GHCR'a) + `cd-bump` (values.yaml tag bump) → **ArgoCD** otomatik sync.
+- **Merge'de testler TEKRAR koşmaz** — PR CI `refs/pull/N/merge` (merge önizlemesi) üzerinde koştu; "require up-to-date" ile test edilen ağaç = main'e inen ağaç → tekrar test israf.
+- **`build` merge'de de koşar** (merge-commit'in imajı şart). `:latest` yalnız merge'de atılır → PR penceresinde merge edilmemiş koda işaret etmez.
+- **CI kırmızıysa `cd-bump` çalışmaz** → prod eski/sağlam sürümde kalır (fail-fast).
+- **GitOps döngüsü** `[skip ci]` ile kırılır (cd-bump'ın commit'i CI'ı tekrar tetiklemez). Ölçekte cevap: ayrı config repo.
 - Daha sıkı: branch protection "require status checks" ile kırmızı PR merge bile edilemez (ekip ortamı için).
 
 ## ❓ SSS — Hocanın beklediği sorular (hazır cevaplar)
 
 ### "Deploy stratejisi ne?"
 **GitOps + deployment gate.** Tek doğruluk kaynağı **Git**:
-`push → CI (lint→test→newman→build→deploy-smoke) → cd-bump values.yaml'a yeni :sha yazar → ArgoCD git'i görüp k3s'e otomatik sync (rolling update)`.
+- **PR'da:** `lint → test → newman → build → deploy-smoke` (Kind'de gerçek smoke). Kalite kapısı.
+- **Merge'de:** yalnız `build` (merge-commit imajı) + `cd-bump` (values.yaml'a yeni `:sha`) → **ArgoCD** git'i görüp k3s'e otomatik sync (rolling update).
 - Backend/frontend her merge'de yeni `:sha` ile güncellenir; üçüncü-parti imajlar (Jaeger/Postgres...) **pinned** (sabit sürüm, sürpriz yok).
 - CI kırmızıysa `cd-bump` çalışmaz → **bozuk kod prod'a gidemez.**
 - Postgres `Recreate` + PVC; diğerleri rolling update. Manuel `kubectl` yok.
