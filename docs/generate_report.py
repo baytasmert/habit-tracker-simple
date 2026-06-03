@@ -169,7 +169,7 @@ story.append(P(
 ))
 story.append(tbl([
     ['Katman', 'Arac', 'Adet', 'Aciklama'],
-    ['Unit', 'pytest', '8', 'auth + model + Factory Boy'],
+    ['Unit', 'pytest', '24', 'auth + model + Factory Boy'],
     ['Integration', 'pytest + TestClient', '32', 'Endpoint + auth + log/mood + photo'],
     ['Testcontainers', 'testcontainers-python', '3', 'Gercek PostgreSQL container'],
     ['E2E', 'Playwright', '6', 'Tarayicida register/login/track/logout'],
@@ -178,9 +178,9 @@ story.append(tbl([
 ], [3, 4, 1.5, 7.5], '#2980B9'))
 story.append(H2('3.1 Coverage Hedefi'))
 story.append(P(
-    'Hedef >= %70. Olcum: <b>%86</b> (src/auth, models, schemas, main coverage). '
+    'Hedef >= %70. Olcum: <b>%87</b> (src/auth, models, schemas, main coverage). '
     'pyproject.toml icinde --cov-fail-under=70 ile CI da zorunlu kilindi. '
-    'Toplam birim+entegrasyon test sayisi: <b>40</b>.'
+    'Toplam birim+entegrasyon test sayisi: <b>56</b>.'
 ))
 story.append(H2('3.2 Factory Boy + Faker'))
 story.append(P(
@@ -265,8 +265,8 @@ story.append(P(
 story.append(H1('6. Sonuc ve Ogrendiklerim'))
 story.append(tbl([
     ['Olcut', 'Deger'],
-    ['Toplam Test', '40 birim+entegrasyon + 3 TC + 6 E2E + 7 Newman'],
-    ['Test Coverage', '%86 (CI gate: --cov-fail-under=70)'],
+    ['Toplam Test', '56 birim+entegrasyon + 3 TC + 6 E2E + 7 Newman'],
+    ['Test Coverage', '%87 (CI gate: --cov-fail-under=70)'],
     ['p(95) Latency', '~285 ms (k6 load)'],
     ['Build Suresi', '~1 dk (backend + frontend imaj -> GHCR)'],
     ['CI Pipeline', '~5-6 dk (6 job: lint -> cd-bump)'],

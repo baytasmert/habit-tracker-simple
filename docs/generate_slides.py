@@ -201,7 +201,7 @@ story += [
         ("115/100", "Beklenen puan", "#10b981"),
         ("+15", "Bonus (tavan)", "#f59e0b"),
         ("7", "K8s servisi", "#3b82f6"),
-        ("58", "Otomatik test", "#8b5cf6"),
+        ("74", "Otomatik test", "#8b5cf6"),
     ], h=2.7),
     PageBreak(),
 ]
@@ -248,7 +248,7 @@ story.append(PageBreak())
 slide(story, 3, "Test Stratejisi", "Test piramidi — geniş taban, dar tepe", [
     info_tbl([
         ["Katman", "Araç", "Adet", "Kapsam"],
-        ["Unit", "pytest", "8", "auth, model, Factory Boy"],
+        ["Unit", "pytest", "24", "auth, model, Factory Boy"],
         ["Integration", "pytest + TestClient", "32", "endpoint + auth + mood + foto"],
         ["Testcontainers", "gerçek PostgreSQL 16", "3", "kalıcılık doğrulama"],
         ["E2E", "Playwright", "6", "tarayıcıda kullanıcı akışı"],
@@ -257,11 +257,11 @@ slide(story, 3, "Test Stratejisi", "Test piramidi — geniş taban, dar tepe", [
     ], [4.2, 6.5, 2.3, 8.0]),
     Spacer(1, 0.45 * cm),
     B("<b>Piramit mantığı:</b> çok sayıda hızlı unit, orta katmanda integration, az sayıda yavaş E2E"),
-    B("<b>Coverage:</b> hedef %70 → ulaşılan <b>%86</b>; CI kapısı "
+    B("<b>Coverage:</b> hedef %70 → ulaşılan <b>%87</b>; CI kapısı "
       "<font face=\"Courier\">--cov-fail-under=70</font> ile zorunlu (düşerse pipeline kırmızı)"),
     B("<b>Testcontainers:</b> gerçek PostgreSQL 16 container'ı → kalıcılık ve şema doğrulanır"),
     B("<b>Factory Boy + Faker:</b> her test izole, gerçekçi ve benzersiz veri üretir"),
-    B("<b>58 otomatik test</b>, 6 farklı türde — hepsi CI'da her push'ta koşar"),
+    B("<b>74 otomatik test</b>, 6 farklı türde — hepsi CI'da her push'ta koşar"),
 ])
 
 # ── 4. CI/CD Pipeline ───────────────────────────────────────────────
@@ -307,8 +307,8 @@ story.append(PageBreak())
 story.append(band(6, "Sayılar", "Projeyi tek bakışta özetleyen metrikler"))
 story.append(Spacer(1, 0.35 * cm))
 story.append(cards([
-    ("58", "otomatik test", "#4f46e5"),
-    ("%86", "coverage", "#10b981"),
+    ("74", "otomatik test", "#4f46e5"),
+    ("%87", "coverage", "#10b981"),
     ("~285ms", "p95 (yük testi)", "#f59e0b"),
 ], h=2.5))
 story.append(Spacer(1, 0.35 * cm))

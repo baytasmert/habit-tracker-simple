@@ -142,7 +142,7 @@ A11y: modal `role=dialog`, ESC ile kapanma, focus yönetimi, blob URL revoke (be
 
 ## ✅ Testler
 
-### Unit + Integration (pytest, ~%86 coverage)
+### Unit + Integration (pytest, ~%87 coverage)
 
 ```bash
 cd backend
@@ -151,7 +151,7 @@ pip install -r requirements.txt
 pytest tests/unit tests/integration
 ```
 
-**40 test, coverage ~%86** (mood + untrack senaryoları dahil; CI gate %70).
+**56 test, coverage ~%87** (mood + untrack senaryoları dahil; CI gate %70).
 
 ### Testcontainers (gerçek PostgreSQL)
 
@@ -304,7 +304,7 @@ habit-tracker-simple/
 | Gereksinim | Durum | Detay |
 |---|:-:|---|
 | Mini Servis (4-6 endpoint) | ✅ | 8 habit/auth + 3 S3 + 3 utility = 14 endpoint |
-| Pytest unit+integration ≥%70 | ✅ | **40 test, %86 coverage** (CI gate: `--cov-fail-under=70`) |
+| Pytest unit+integration ≥%70 | ✅ | **56 test, %87 coverage** (CI gate: `--cov-fail-under=70`) |
 | Postman/Newman CI | ✅ | 7 istek + test assertions, CI'da koşar |
 | Docker multi-stage | ✅ | backend (builder+runtime) + frontend (NGINX) |
 | LocalStack S3 (Community Edition) | ✅ | Habit photo upload+list, UI'da görünür |
