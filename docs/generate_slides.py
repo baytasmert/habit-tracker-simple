@@ -305,22 +305,25 @@ story.append(PageBreak())
 
 # ── 6. Sayılar ──────────────────────────────────────────────────────
 story.append(band(6, "Sayılar", "Projeyi tek bakışta özetleyen metrikler"))
-story.append(Spacer(1, 0.55 * cm))
+story.append(Spacer(1, 0.35 * cm))
 story.append(cards([
     ("58", "otomatik test", "#4f46e5"),
     ("%86", "coverage", "#10b981"),
     ("~285ms", "p95 (yük testi)", "#f59e0b"),
-], h=3.0))
-story.append(Spacer(1, 0.5 * cm))
+], h=2.5))
+story.append(Spacer(1, 0.35 * cm))
+story.append(cards([
+    ("~1 dk", "build (imaj → GHCR)", "#0ea5e9"),
+    ("~6 dk", "CI pipeline (6 job)", "#14b8a6"),
+    ("~1-3 dk", "deploy (ArgoCD sync)", "#f97316"),
+], h=2.5))
+story.append(Spacer(1, 0.35 * cm))
 story.append(cards([
     ("7", "K8s servisi", "#3b82f6"),
     ("6", "CI job", "#8b5cf6"),
-    ("+15", "bonus (Helm·OTel·ArgoCD)", "#ef4444"),
-], h=3.0))
-story.append(Spacer(1, 0.55 * cm))
-story.append(B("<b>p95 yorumu:</b> 285 ms, 500 ms eşiğinin çok altında — en yavaş uçlar "
-                "<font face=\"Courier\">/register</font> ve <font face=\"Courier\">/login</font> "
-                "(bcrypt hashing, güvenlik gereği optimize edilmez)"))
+    ("+15", "bonus (tavan)", "#ef4444"),
+], h=2.5))
+story.append(Spacer(1, 0.4 * cm))
 story.append(B("<b>Şartname:</b> 100/100 zorunlu + 15/15 bonus (tavan) → beklenen 115/100"))
 story.append(PageBreak())
 

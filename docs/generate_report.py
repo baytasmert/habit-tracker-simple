@@ -1,4 +1,4 @@
-"""docs/final-report.pdf üretir — 6 sayfa, 11pt / 1.15, ders şartname formatı."""
+"""docs/final-report.pdf üretir — 7 sayfa, 11pt / 1.15, ders şartname formatı."""
 import os
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -109,7 +109,7 @@ story.append(P(
 ))
 if os.path.exists('docs/architecture.png'):
     try:
-        story.append(Image('docs/architecture.png', width=9.2 * cm, height=10.95 * cm))
+        story.append(Image('docs/architecture.png', width=9.0 * cm, height=10.71 * cm))
     except Exception:
         story.append(P('[Mimari diyagram: docs/architecture.png]'))
 story.append(Spacer(1, 4))
@@ -121,7 +121,7 @@ story.append(tbl([
     ['S3 (LocalStack)', 'LocalStack 3', '4566', 'Habit progress photo'],
     ['Tracing', 'Jaeger 1.55', '16686', 'OTLP span (bonus +5)'],
     ['Metrics', 'Prometheus 2.51', '9090', 'API metrik scrape'],
-    ['Dashboard', 'Grafana 10.4', '3000', '3 panel (rate, error, latency)'],
+    ['Dashboard', 'Grafana 10.4', '3000', '12 panel (API + host + kapasite)'],
 ], [3.5, 4.5, 2, 6], '#27AE60'))
 story.append(P(
     'Uretim ortami: tek VPS uzerinde <b>k3s</b> cluster, <b>Helm</b> chart ile '
@@ -129,6 +129,36 @@ story.append(P(
     'GitOps otomatik senkronizasyon. Tum servisler vivabit.digital alt alanlari '
     'uzerinden yayinlanir.'
 ))
+story.append(H2('2.1 Frontend ve Backend'))
+story.append(P(
+    '<b>Frontend</b> (NGINX + vanilla JS): landing, login, register ve dashboard '
+    'sayfalari. Dashboard ozet kartlari (toplam / bugun tamamlanan / en uzun seri), '
+    'kategori renkli habit kartlari, haftalik ilerleme cubugu, 5 emoji mood secici '
+    've fotograf yukleme sunar. Backend HTML uretmez; iletisim NGINX <i>/api</i> '
+    'reverse proxy uzerinden (tek origin, CORS yok).'
+))
+story.append(P(
+    '<b>Backend</b> (FastAPI): yalniz JSON REST, 14 endpoint, JWT + bcrypt auth. '
+    'Ana endpoint ler:'
+))
+story.append(tbl([
+    ['Method', 'Path', 'Aciklama'],
+    ['POST', '/register · /login', 'Kayit + JWT token'],
+    ['GET / POST', '/habits', 'Habit listele / olustur'],
+    ['POST', '/habits/{id}/track', 'Gunu isaretle (UPSERT + mood)'],
+    ['GET', '/habits/{id}/streak · /logs', 'Seri + toplam, gunluk gecmis'],
+    ['POST / GET', '/habits/{id}/photo(s)', 'S3 foto yukle / listele / goruntule'],
+    ['GET', '/health · /metrics · /docs', 'Saglik, Prometheus, Swagger'],
+], [2.6, 6.2, 7.2], '#8E44AD'))
+if os.path.exists('docs/website.png'):
+    try:
+        _web = Image('docs/website.png', width=8.5 * cm, height=7.85 * cm)
+        _web.hAlign = 'CENTER'
+        story.append(Spacer(1, 4))
+        story.append(_web)
+        story.append(Paragraph('Uygulama arayuzu — dashboard (vivabit.digital)', sub))
+    except Exception:
+        pass
 story.append(PageBreak())
 
 # ── 3. Test Stratejisi ───────────────────────────────────
@@ -174,53 +204,50 @@ story.append(tbl([
     ['cd-bump', 'values.yaml imaj tag bump -> commit (ArgoCD tetikler)', 'deploy-smoke'],
 ], [2.5, 9.5, 4], '#16A085'))
 story.append(P(
-    'Build job iki Docker imaj uretir (backend + frontend), her ikisi de '
-    'GitHub Container Registry e :sha + :latest etiketleriyle pushlanir. '
-    'Deploy job ayni imajlari Kind cluster a yukler ve Helm chart i '
-    '<i>helm template ... | kubectl apply -f -</i> ile render edip uygular; '
-    'ardindan /health + /metrics curl ve k6 smoke ile dogrular. Son olarak '
-    'cd-bump job u Helm values.yaml deki imaj tag ini yeni SHA ya gunceller; '
-    'uretimdeki ArgoCD bu commit i gorup cluster i otomatik senkronize eder.'
+    '<b>Fail-fast zincir:</b> bir job kirilirsa sonrakiler calismaz — bozuk kod '
+    'build/deploy edilmez. build imajlari GHCR a (:sha) pushlar; deploy-smoke '
+    'gercek bir Kind cluster da deploy edip dogrular (kalite kapisi).'
 ))
-story.append(H2('4.2 Kubernetes Manifestleri & Deploy Stratejisi'))
+story.append(H2('4.2 Deploy Stratejisi (GitOps)'))
 story.append(P(
-    '7 servisin tum K8s kaynaklari (Deployment + Service + ConfigMap + Ingress) '
-    'tek bir <b>Helm chart</b> (helm/habit-tracker) icinde template lenmistir; '
-    'imaj tag, domain, replica ve kaynak limitleri values.yaml dan yonetilir. '
-    'Ayni chart hem CI deki Kind cluster da (ingress kapali, port-forward) hem de '
-    'uretimdeki k3s cluster da (ingress acik, Traefik + Let\'s Encrypt) calisir. '
-    'Deploy stratejisi <b>GitOps</b> tir: git push -> CI imaj build + values tag '
-    'bump -> ArgoCD farki algilayip otomatik sync eder. Rollback, ArgoCD de '
-    'onceki saglikli revizyona donmek veya GHCR deki :sha etiketli onceki imaja '
-    'gecmek kadar basittir.'
+    '7 servisin tum K8s kaynaklari tek bir <b>Helm chart</b> ta toplandi; '
+    'values.yaml sayesinde ayni chart lokal / CI / prod ta calisir (imaj tag, '
+    'domain, replica oradan). Deploy <b>GitOps</b> tir: <b>ArgoCD</b> git i '
+    'surekli izler, fark olunca cluster i otomatik sync eder. Rollback = onceki '
+    'Git revizyonu veya :sha etiketli onceki imaj.'
+))
+story.append(B(
+    '<b>Yeni guncelleme akisi:</b> kod degisikligi &#8594; PR (CI tum testleri '
+    'kosar, prod a dokunulmaz) &#8594; merge &#8594; imaj GHCR a push + cd-bump '
+    'values.yaml a yeni :sha yazar &#8594; ArgoCD git i gorup k3s e rolling '
+    'update ile uygular. Manuel kubectl yok; tek dogruluk kaynagi Git.'
 ))
 story.append(PageBreak())
 
 # ── 5. Monitoring & Perf ─────────────────────────────────
 story.append(H1('5. Monitoring ve Performans'))
-story.append(H2('5.1 Prometheus Metrikleri'))
+story.append(H2('5.1 Grafana Dashboard (12 panel)'))
 story.append(tbl([
-    ['Metrik', 'Tur', 'Aciklama'],
-    ['http_requests_total', 'Counter', 'Endpoint/method/status bazli sayim'],
-    ['http_request_duration_seconds', 'Histogram', 'p50/p95/p99 latency'],
-], [5.5, 2.5, 8], '#D35400'))
-story.append(H2('5.2 Grafana Dashboard (3 panel)'))
-story.append(B('Request Rate: <code>rate(http_requests_total[1m])</code> by endpoint'))
-story.append(B('Error Rate: 4xx/5xx oranlari, status koduna gore'))
-story.append(B('Latency p95/p99: <code>histogram_quantile</code> ile hesaplanir'))
-# Grafana ekran goruntusu (docs/grafana-dashboard.png varsa otomatik eklenir)
-if os.path.exists('docs/grafana-dashboard.png'):
+    ['Panel', 'Ne gosterir (kisaca)'],
+    ['Ozet kartlari', 'Erisilebilirlik %, aktif kullanici (5dk), saglikli pod'],
+    ['Kapasite', 'Aktif kullanici vs host CPU/RAM (zaman bazli korelasyon)'],
+    ['Host CPU/RAM/Disk + Uptime', 'VM kaynak kullanimi + backend ayakta suresi'],
+    ['Istek / Hata / Gecikme', 'Endpoint req/s, 4xx-5xx orani, p95/p99 latency'],
+    ['Gercek API Yuku', 'Endpoint bazli yuk dagilimi (probe/scrape haric)'],
+], [5, 11], '#2980B9'))
+# Grafana ekran goruntusu: guncel grafana.png varsa onu, yoksa eskisini
+_graf = 'docs/grafana.png' if os.path.exists('docs/grafana.png') else 'docs/grafana-dashboard.png'
+if os.path.exists(_graf):
     try:
         story.append(Spacer(1, 4))
-        story.append(Image('docs/grafana-dashboard.png', width=15 * cm, height=7.09 * cm))
+        _gh = 8.04 if _graf.endswith('grafana.png') else 7.56
+        _gi = Image(_graf, width=16 * cm, height=_gh * cm)
+        _gi.hAlign = 'CENTER'
+        story.append(_gi)
+        story.append(Paragraph('Grafana — API & servis metrikleri (grafana.vivabit.digital)', sub))
     except Exception:
         story.append(P('[Grafana dashboard: grafana.vivabit.digital]'))
-else:
-    story.append(P(
-        '<i>Canli dashboard: grafana.vivabit.digital (ekran goruntusu icin '
-        'docs/grafana-dashboard.png eklenebilir).</i>'
-    ))
-story.append(H2('5.3 k6 Sonuclari'))
+story.append(H2('5.2 k6 Sonuclari'))
 story.append(tbl([
     ['Test', 'VU', 'Sure', 'p(95)', 'Hata', 'Sonuc'],
     ['Smoke', '3', '15s', '~5 ms', '0%', 'PASS'],
@@ -241,50 +268,39 @@ story.append(tbl([
     ['Toplam Test', '40 birim+entegrasyon + 3 TC + 6 E2E + 7 Newman'],
     ['Test Coverage', '%86 (CI gate: --cov-fail-under=70)'],
     ['p(95) Latency', '~285 ms (k6 load)'],
+    ['Build Suresi', '~1 dk (backend + frontend imaj -> GHCR)'],
+    ['CI Pipeline', '~5-6 dk (6 job: lint -> cd-bump)'],
+    ['Prod Deploy', 'ArgoCD otomatik sync ~1-3 dk (cd-bump sonrasi)'],
     ['Docker Image', 'Multi-stage backend + NGINX alpine frontend'],
     ['K8s Deploy', 'Helm chart -> 7 servis (k3s prod + Kind CI)'],
-    ['Grafana Panel', '3 panel (rate, errors, latency)'],
-    ['CI Job', '6 (lint, test, newman, build, deploy-smoke, cd-bump)'],
+    ['Grafana Panel', '12 panel (API + host + kapasite)'],
     ['Bonus', 'Helm +5, OpenTelemetry +5, ArgoCD +5 (tavan +15)'],
 ], [6, 10], '#2C3E50'))
-story.append(H2('6.1 Zorluklar'))
+story.append(H2('6.1 Ogrendiklerim ve Zorluklar'))
 story += [
-    B('<b>Frontend ayrimi:</b> Ilk versiyonda Jinja2 ile FastAPI icine '
-      'gomuluydu — bu projede NGINX uzerinden static serve edilen tamamen '
-      'ayri bir servis olarak yeniden tasarlandi. Bu, mikroservis '
-      'mimarilerinin temel ayrimini ogretti.'),
-    B('<b>Testcontainers Windows encoding:</b> psycopg2, Windows Turkce '
-      'locale ile uyumlu calismadi. Cozum: pytestmark ile platforma ozel '
-      'skip, Linux/CI da otomatik calisir.'),
-    B('<b>K8s image render:</b> Manifestlerde imaj etiketi GitHub SHA degisken — '
-      'sed ile placeholder degistirme calisti.'),
+    B('<b>Gozlemlenebilirlik tuzagi:</b> Grafana /health i 1-2K istek/s '
+      'gosteriyordu, ama gercek hiz ~0.2/s idi. Sebep: Prometheus Service i '
+      'scrape edince 2 replikanin sayaclari tek seriye karisip rate() sahte '
+      'spike uretiyordu. Her pod u ayri scrape (kubernetes_sd + RBAC) ile '
+      'cozuldu. Metrige korkmadan once dogrulamak gerektigini ogrendim.'),
+    B('<b>Kapasite / CPU throttling:</b> k6 yukunde p95 13 s e firladi ama host '
+      'CPU sadece %37 idi -> darbogaz makine degil, pod un 0.5 CPU limiti '
+      '(Kubernetes throttling) + her iterasyonda bcrypt. CPU limitini artirip '
+      'yuk testini gercekci yaparak (VU basina tek login) cozdum.'),
+    B('<b>Metrik kardinalitesi:</b> Etikette ham URL (/habits/1/track) her id yi '
+      'ayri seri yapip kardinaliteyi patlatiyordu. Route sablonu '
+      '(/habits/{habit_id}/track) ile tek seride topladim.'),
+    B('<b>Kalicilik:</b> Postgres ve Prometheus baslangicta volume suz idi -> '
+      'restart ta veri/metrik gidiyordu. PVC ekleyerek kalici kildim (stateless '
+      'pod ile kalici state ayrimini ogrendim).'),
+    B('<b>Konfigurasyon yonetimi:</b> Servis URL leri, DB ve S3 ayarlarini kod '
+      'icinde yonetmek (lokal vs CI vs prod) cok zordu. Tek kaynaktan okumaya '
+      'gectim: pydantic-settings + .env / Helm values -> ayni kod her ortamda, '
+      'sadece deger degisir.'),
+    B('<b>Lint dengesi:</b> Basit stil kurallari (E203/E302/F401...) CI yi '
+      'surekli takiyordu. <code>backend/.flake8</code> ile pragmatik bir ignore '
+      'listesi hazirladim — kodu kiran hatalar yakalanir, stil takintilari gecilir.'),
 ]
-story.append(H2('6.2 Tamamlanan Bonuslar'))
-story += [
-    B('<b>Helm chart (+5):</b> 7 servisin tum K8s kaynaklari tek chart ta '
-      'paketlendi; imaj tag/domain/replica values.yaml dan yonetilir.'),
-    B('<b>OpenTelemetry tracing (+5):</b> FastAPI + SQLAlchemy auto-instrument, '
-      'OTLP ile Jaeger e span gonderilir.'),
-    B('<b>ArgoCD GitOps (+5):</b> git push -> CI tag bump -> ArgoCD otomatik sync. '
-      'Toplam bonus +15 (tavan).'),
-]
-story.append(H2('6.3 Ileride'))
-story += [
-    B('KEDA ile event-driven autoscaling (kalan tek bonus konu)'),
-    B('Connection pooling (PgBouncer) — yuksek yukte daha az overhead'),
-]
-
-# ── 7. Kaynaklar ─────────────────────────────────────────
-story.append(H1('7. Kaynaklar'))
-sources = [
-    ('FastAPI', 'fastapi.tiangolo.com'),
-    ('Testcontainers Python', 'testcontainers-python.readthedocs.io'),
-    ('k6', 'k6.io/docs'),
-    ('Playwright Python', 'playwright.dev/python'),
-    ('Kubernetes', 'kubernetes.io/docs'),
-    ('Prometheus Python Client', 'github.com/prometheus/client_python'),
-]
-story.append(tbl([['Kaynak', 'URL']] + sources, [5, 11], '#16A085'))
 
 story += [Spacer(1, 12), hr(), Paragraph(
     'Mert Baytas — Marmara Universitesi, Bilgisayar Muhendisligi, 2026',
