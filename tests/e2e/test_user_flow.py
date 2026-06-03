@@ -9,6 +9,7 @@ E2E testleri — gerçek tarayıcı, gerçek frontend + backend.
 Frontend: http://localhost:8080  (NGINX)
 Backend:  http://localhost:8000  (FastAPI)
 """
+import os
 import time
 import uuid
 
@@ -16,7 +17,9 @@ import pytest
 from playwright.sync_api import Page, expect
 
 
-FRONTEND_URL = "http://localhost:8080"
+# Lokal: http://localhost:8080 (docker-compose). VPS / canli demo icin:
+#   FRONTEND_URL=https://vivabit.digital pytest tests/e2e/ -v
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:8080")
 
 
 def _unique_user():
