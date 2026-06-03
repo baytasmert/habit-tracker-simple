@@ -824,6 +824,20 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 .welcome-footer a { color: var(--primary); text-decoration: none; }
 .welcome-footer a:hover { text-decoration: underline; }
 
+/* DEMO sürüm rozeti — landing footer (canlı deploy kanıtı) */
+.app-version {
+  display: inline-block;
+  margin: 0 auto 14px;
+  padding: 6px 16px;
+  background: var(--grad);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  border-radius: 999px;
+  box-shadow: var(--shadow-md);
+  letter-spacing: 0.3px;
+}
+
 /* "← Ana sayfa" link on auth pages */
 .back-link {
   display: inline-block;
