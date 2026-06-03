@@ -3,25 +3,21 @@ import { check, sleep } from 'k6';
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8000';
 
-// QUICK=1  -> demo icin kisa sabit yuk (varsayilan 10 VU, 30s) ~1 dk'da biter
-//            sure/VU override:  -e QUICK=1 -e DURATION=30s -e VUS=10
-// Varsayilan (QUICK yok) -> tam kademeli test (10->20 VU, ~60s) [rapor metodu]
-const QUICK = __ENV.QUICK === '1';
-const thresholds = {
-  http_req_failed: ['rate<0.05'],
-  http_req_duration: ['p(95)<500'],
-};
+// Yuk profili VUS + DURATION env ile ayarlanir. Vermezsen varsayilan 10 VU / 30s.
+//   k6 run -e VUS=20 -e DURATION=1m  -e BASE_URL=https://vivabit.digital/api perf/load-test.js
+//   k6 run -e VUS=50 -e DURATION=45s -e BASE_URL=https://vivabit.digital/api perf/load-test.js
+// DURATION formatlari: '30s', '1m', '2m30s' ...
+const VUS = Number(__ENV.VUS || 10);
+const DURATION = __ENV.DURATION || '30s';
 
-export const options = QUICK
-  ? { vus: Number(__ENV.VUS || 10), duration: __ENV.DURATION || '30s', thresholds }
-  : {
-      stages: [
-        { duration: '15s', target: 10 },
-        { duration: '30s', target: 20 },
-        { duration: '15s', target: 0 },
-      ],
-      thresholds,
-    };
+export const options = {
+  vus: VUS,
+  duration: DURATION,
+  thresholds: {
+    http_req_failed: ['rate<0.05'],
+    http_req_duration: ['p(95)<500'],
+  },
+};
 
 // k6 her VU'yu ayrı JS örneğinde çalıştırır → modül seviyesi değişkenler
 // VU'ya özeldir. Her VU kullanıcısını BİR KEZ kurar, sonra token'ı yeniden

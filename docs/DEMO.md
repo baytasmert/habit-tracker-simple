@@ -44,13 +44,16 @@ kubectl get application habit-tracker-simple -n argocd -w
 
 ---
 
-## C. k6 yük testi — **1 dk'lık QUICK mod** (p95)
+## C. k6 yük testi — VUS + DURATION ile ayarlanır (p95)
 ```bash
 cd ~/habit-tracker-simple
-k6 run -e QUICK=1 -e BASE_URL=https://vivabit.digital/api perf/load-test.js
+# Varsayılan: 10 VU, 30s (env vermezsen)
+k6 run -e BASE_URL=https://vivabit.digital/api perf/load-test.js
+# Kendi ayarın:
+k6 run -e VUS=20 -e DURATION=1m -e BASE_URL=https://vivabit.digital/api perf/load-test.js
 ```
-- `QUICK=1` → 10 VU, 30 sn sabit yük (~1 dk'da biter). Süre/VU: `-e DURATION=20s -e VUS=15`.
-- Tam test (rapor metodu, ~60s+): `QUICK` olmadan çalıştır.
+- `-e VUS=<sayı>` sanal kullanıcı, `-e DURATION=<süre>` ('30s','1m','2m30s'). Vermezsen 10 VU/30s.
+- Sadece "ayakta mı" yoklaması için hafif smoke: `k6 run -e BASE_URL=https://vivabit.digital/api perf/smoke-test.js`.
 - Çıktıda: `http_req_duration ... p(95)=...` + `http_req_failed`.
 > ⚠️ VPS'te koşunca k6 host CPU'sunu kullanır → Grafana "Host CPU" panelinde k6 yükü de görünür (normal).
 
@@ -86,7 +89,7 @@ deactivate
 ## 🎯 Önerilen demo sırası (≤7 dk)
 1. **Slot başında:** B'deki PR'ı aç + merge et (CI + ArgoCD arka planda çalışsın).
 2. Slaytlar (~8 dk).
-3. Demo: **CI yeşil** (gh / Actions) → **ArgoCD Synced** (D) → `vivabit.digital` "v1.1" **canlı** → **Grafana** panelleri → **k6 QUICK** (C) → **1 E2E** (E).
+3. Demo: **CI yeşil** (gh / Actions) → **ArgoCD Synced** (D) → `vivabit.digital` "v1.1" **canlı** → **Grafana** panelleri → **k6 yük** (C) → **1 E2E** (E).
 
 ## 📌 GitOps best-practice (savunma notu)
 Hocanın "PR→CI, merge→CD" akışı = endüstri standardı **deployment gate**. Tek dosya `.github/workflows/ci-cd.yml`, event'e göre ayrışır:
