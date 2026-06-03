@@ -957,3 +957,101 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 
 /* mod butonları — seçiliyken degrade çerçeve hissi */
 .mood-btn.selected { border-color: #8b5cf6; background: rgba(139,92,246,.10); box-shadow: var(--shadow-sm); }
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE — dosya sonunda (sonraki kural olmadığı için cascade'i
+   kazanır). Kırılımlar: ≤768 tablet · ≤600 telefon · ≤400 dar telefon.
+═══════════════════════════════════════════════════════════════ */
+
+/* görseller asla taşmasın */
+img { max-width: 100%; height: auto; }
+
+/* ── Tablet ve altı (≤768px) ───────────────────────────── */
+@media (max-width: 768px) {
+  /* Welcome / landing */
+  .welcome-nav { padding: 16px 20px; }
+  .welcome-hero { padding: 56px 20px 44px; }
+  .welcome-hero h1 { font-size: 34px; }
+  .hero-text { font-size: 16px; }
+  .features, .how-it-works { margin: 32px auto; padding: 0 20px; }
+
+  /* Dashboard */
+  .top-bar { padding: 12px 20px; }
+  .dashboard-main { margin: 20px auto; padding: 0 16px; gap: 18px; }
+}
+
+/* ── Telefon (≤600px) ──────────────────────────────────── */
+@media (max-width: 600px) {
+  /* ---- Welcome / landing (mobil öncelikli) ---- */
+  .welcome-nav { padding: 14px 16px; }
+  .brand { font-size: 18px; }
+  .nav-link { padding: 7px 12px; font-size: 13px; }
+
+  .welcome-hero { padding: 40px 18px 32px; }
+  .welcome-hero h1 { font-size: 27px; line-height: 1.2; }
+  .hero-text { font-size: 15px; margin-bottom: 26px; }
+
+  /* CTA butonları alt alta ve tam genişlik → kolay dokunma */
+  .hero-cta { flex-direction: column; gap: 10px; }
+  .hero-cta .btn-primary,
+  .hero-cta .btn-ghost { width: 100%; text-align: center; padding: 15px 20px; }
+
+  .features { grid-template-columns: 1fr; gap: 14px; margin: 28px auto; }
+  .feature-card { padding: 22px 20px; }
+  .how-it-works { margin: 40px auto; }
+  .how-it-works h2 { font-size: 22px; }
+  .steps li { padding: 16px 18px 16px 56px; font-size: 14px; }
+  .welcome-footer { padding: 32px 18px; }
+
+  /* ---- Auth sayfaları ---- */
+  .auth-page { padding: 16px; }
+  .auth-card { padding: 24px 20px; }
+  .auth-card h1 { font-size: 24px; }
+
+  /* ---- Dashboard ---- */
+  .top-bar { padding: 12px 14px; }
+  .top-bar h1 { font-size: 17px; }
+  .top-bar-right { gap: 8px; }
+  .greeting { display: none; }            /* dar ekranda taşmasın */
+  .logout-btn { padding: 7px 12px; }
+
+  .dashboard-main { padding: 0 12px; gap: 16px; }
+  .card { padding: 18px 16px; }
+
+  .stats-row { gap: 8px; }
+  .stat-card { padding: 16px 8px; }
+  .stat-value { font-size: 24px; }
+  .stat-label { font-size: 11px; }
+
+  /* Habit ekleme formu — tek sütun + tam genişlik aksiyon */
+  .form-row { grid-template-columns: 1fr; }
+  .form-actions { flex-direction: column-reverse; align-items: stretch; gap: 10px; }
+  .form-actions .btn-create,
+  .form-actions button { width: 100%; }
+
+  /* Habit kartı + footer */
+  .habit-item { padding: 16px; }
+  .habit-footer { gap: 10px; }
+  .footer-left { flex: 1; }
+  .btn-history, .btn-delete { flex: 1; text-align: center; }
+  .btn-track { width: 100%; }
+
+  /* Haftalık şerit — dar ekranda noktalar küçülsün */
+  .week-strip { gap: 4px; }
+  .day-dot { width: 22px; height: 22px; }
+
+  /* Modal */
+  .modal-overlay { padding: 14px; }
+  .modal { padding: 20px 18px; }
+}
+
+/* ── Dar telefon (≤400px) ──────────────────────────────── */
+@media (max-width: 400px) {
+  .welcome-hero h1 { font-size: 24px; }
+  /* stat kartları 3 sütun KALIR (küçük rakamlar sığar) — yalnız sıkıştır */
+  .stats-row { gap: 6px; }
+  .stat-card { padding: 14px 4px; }
+  .stat-value { font-size: 21px; }
+  .stat-label { font-size: 10px; }
+  .day-dot { width: 19px; height: 19px; }
+}
