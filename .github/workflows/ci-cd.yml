@@ -198,7 +198,8 @@ jobs:
   cd-bump:
     runs-on: ubuntu-latest
     needs: build                     # merge'de deploy-smoke koşmuyor; build yeter
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.build.result == 'success'
+    # needs:build zaten "build başarılı" şartını sağlar (skip/fail → cd-bump skip).
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
       contents: write                # k8s/kustomization.yaml'a commit gerekli
     steps:
