@@ -11,10 +11,25 @@ env:
 
 jobs:
 
-  # Akış: PR'da tam doğrulama (lint→test→newman→build→deploy-smoke).
-  # merge (push main): yalnız build + cd-bump. Testler PR'da geçti ve branch
-  # protection "require up-to-date" sayesinde merge commit'i = test edilmiş hal
-  # → merge'de tekrar test gereksiz. build merge-commit imajı için şart.
+  # ╔══════════════════════════════════════════════════════════════╗
+  # ║  MİMARİ: CI burada (GitHub Actions) · CD ise ArgoCD'de.        ║
+  # ║                                                                ║
+  # ║   GitHub Actions ─► Git (tag bump) ─► ArgoCD ─► k3s            ║
+  # ║   └──── CI ────┘   └─ handoff ─┘    └──── CD (deploy) ────┘    ║
+  # ║                                                                ║
+  # ║  Bu dosya = CI + CD-tetikleyici. Asıl deploy'u ArgoCD yapar.  ║
+  # ║  Event'e göre ayrışır:                                         ║
+  # ║   • pull_request → CI bölümü (lint→test→newman→build→smoke)    ║
+  # ║   • push main    → yalnız build + CD bölümü (cd-bump)          ║
+  # ║                                                                ║
+  # ║  Neden merge'de test yok? PR'da geçti; branch protection       ║
+  # ║  "require up-to-date" → merge commit = test edilmiş hal.       ║
+  # ║  build merge'de de koşar (merge-commit imajı şart).            ║
+  # ╚══════════════════════════════════════════════════════════════╝
+
+  # ═══════════════════ CI — KALİTE KAPISI (PR'da) ═══════════════════
+  # lint → test → newman → build → deploy-smoke. Hepsi pull_request'te.
+  # Bozuk kod yeşil olmadan merge edilemez → prod'a gidemez.
 
   # ── 1. Lint ───────────────────────────────────────────────────
   lint:
@@ -193,8 +208,11 @@ jobs:
           kubectl describe pods
           kubectl logs deployment/backend --tail=200 || true
 
+  # ═══════════════ CD — GİTOPS TETİKLEYİCİ (merge'de) ═══════════════
+  # Asıl deploy'u ArgoCD yapar; bu job sadece yeni imaj tag'ini Git'e yazar
+  # (handoff). ArgoCD bu commit'i görüp k3s'e otomatik sync eder.
+
   # ── 6. CD — image tag bump → commit (GitOps trigger) ─────────
-  # Production cluster'daki ArgoCD bu commit'i görür, otomatik sync eder.
   cd-bump:
     runs-on: ubuntu-latest
     needs: build                     # merge'de deploy-smoke koşmuyor; build yeter

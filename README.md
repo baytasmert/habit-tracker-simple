@@ -233,18 +233,32 @@ VPS'teki k3s cluster'ı bu chart'ı Helm ile çalıştırır; ingress açık (Tr
 
 ## 🔄 CI/CD Pipeline
 
-`.github/workflows/ci-cd.yml` — **6 job zincirli**:
+**CI ile CD iki ayrı sistemde**, Git ise aralarındaki tek devir noktası (GitOps):
 
 ```
-push/PR → main
-   │
+GitHub Actions ──► Git (tag bump) ──► ArgoCD ──► k3s
+└───── CI ─────┘   └── handoff ──┘   └──── CD (asıl deploy) ────┘
+```
+
+`.github/workflows/ci-cd.yml` = **CI + CD-tetikleyici** (asıl deploy'u ArgoCD yapar).
+**6 job**, event'e göre ayrışır:
+
+```
+PR aç (pull_request)            →  CI — KALİTE KAPISI (tam doğrulama)
    ├── lint           flake8
    ├── test           pytest + coverage 70%+ + Testcontainers
    ├── newman         live API (Postgres service) + Postman collection
    ├── build          backend + frontend → GHCR (:sha, :latest)
-   ├── deploy-smoke   Kind cluster + helm template apply + curl + k6 smoke
-   └── cd-bump        values.yaml image tag bump → commit (ArgoCD GitOps tetikler)
+   └── deploy-smoke   Kind cluster + helm template apply + curl + k6 smoke
+
+merge (push → main)             →  yalnız build + CD (test TEKRAR koşmaz)
+   ├── build          merge-commit imajı → GHCR
+   └── cd-bump        values.yaml image tag bump → commit → ArgoCD sync
 ```
+
+> **Merge'de neden test yok?** Testler PR'da geçti; branch protection "require up-to-date"
+> ile merge commit'i = test edilmiş hal → tekrar test gereksiz (hızlı, israfsız deploy).
+> `build` merge'de de koşar çünkü merge-commit'in imajı şart.
 
 **`deploy-smoke` ayağa kaldırdığı servisler**: postgres, localstack, jaeger, prometheus, grafana, backend, frontend (7 servis) — `helm template … | kubectl apply -f -` ile.
 
