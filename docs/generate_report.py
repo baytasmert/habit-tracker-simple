@@ -192,7 +192,7 @@ story.append(P(
 story.append(H1('4. Pipeline & Deploy'))
 story.append(H2('4.1 GitHub Actions'))
 story.append(P(
-    '.github/workflows/ci.yml — tek workflow, 6 job zincirli:'
+    '.github/workflows/ci-cd.yml — tek workflow, 6 job zincirli:'
 ))
 story.append(tbl([
     ['Job', 'Amac', 'Onkos'],

@@ -233,7 +233,7 @@ VPS'teki k3s cluster'ı bu chart'ı Helm ile çalıştırır; ingress açık (Tr
 
 ## 🔄 CI/CD Pipeline
 
-`.github/workflows/ci.yml` — **6 job zincirli**:
+`.github/workflows/ci-cd.yml` — **6 job zincirli**:
 
 ```
 push/PR → main
@@ -292,7 +292,7 @@ habit-tracker-simple/
 ├── postman/                # Newman collection
 ├── monitoring/             # docker-compose için provisioning
 ├── docs/                   # architecture.png + final-report.pdf
-├── .github/workflows/ci.yml
+├── .github/workflows/ci-cd.yml
 ├── docker-compose.yml      # 8 servis
 └── LICENSE
 ```

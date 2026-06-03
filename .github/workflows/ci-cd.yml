@@ -1,4 +1,4 @@
-name: CI
+name: CI / CD
 
 on:
   push:
@@ -11,9 +11,15 @@ env:
 
 jobs:
 
+  # Akış: PR'da tam doğrulama (lint→test→newman→build→deploy-smoke).
+  # merge (push main): yalnız build + cd-bump. Testler PR'da geçti ve branch
+  # protection "require up-to-date" sayesinde merge commit'i = test edilmiş hal
+  # → merge'de tekrar test gereksiz. build merge-commit imajı için şart.
+
   # ── 1. Lint ───────────────────────────────────────────────────
   lint:
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -27,6 +33,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     needs: lint
+    if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -44,6 +51,7 @@ jobs:
   newman:
     runs-on: ubuntu-latest
     needs: test
+    if: github.event_name == 'pull_request'
     services:
       postgres:
         image: postgres:16-alpine
@@ -82,6 +90,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     needs: [test, newman]
+    # merge'de test/newman atlanir (skipped); build yine de calismali (imaj sart).
+    # PR'da ise test+newman gecmeden build calismasin.
+    if: >-
+      always() &&
+      (github.event_name == 'push' ||
+       (needs.test.result == 'success' && needs.newman.result == 'success'))
     permissions:
       contents: read
       packages: write
@@ -124,6 +138,7 @@ jobs:
   deploy-smoke:
     runs-on: ubuntu-latest
     needs: build
+    if: github.event_name == 'pull_request'
     permissions:
       contents: read
       packages: read
@@ -182,8 +197,8 @@ jobs:
   # Production cluster'daki ArgoCD bu commit'i görür, otomatik sync eder.
   cd-bump:
     runs-on: ubuntu-latest
-    needs: [build, deploy-smoke]     # build'in image output'unu + CI gate'i bekle
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: build                     # merge'de deploy-smoke koşmuyor; build yeter
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.build.result == 'success'
     permissions:
       contents: write                # k8s/kustomization.yaml'a commit gerekli
     steps:
