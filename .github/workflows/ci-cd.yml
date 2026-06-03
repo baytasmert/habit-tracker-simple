@@ -137,9 +137,11 @@ jobs:
         with:
           context: ./backend
           push: true
+          # :latest yalnız merge'de (push) atılır; PR'da :sha yeterli →
+          # :latest hiçbir zaman merge edilmemiş PR koduna işaret etmez.
           tags: |
             ${{ steps.tags.outputs.backend }}:${{ github.sha }}
-            ${{ steps.tags.outputs.backend }}:latest
+            ${{ github.event_name == 'push' && format('{0}:latest', steps.tags.outputs.backend) || '' }}
       - name: Build & push frontend
         uses: docker/build-push-action@v5
         with:
@@ -147,7 +149,7 @@ jobs:
           push: true
           tags: |
             ${{ steps.tags.outputs.frontend }}:${{ github.sha }}
-            ${{ steps.tags.outputs.frontend }}:latest
+            ${{ github.event_name == 'push' && format('{0}:latest', steps.tags.outputs.frontend) || '' }}
 
   # ── 5. Deploy to Kind + smoke test (CI gate) ──────────────────
   deploy-smoke:
